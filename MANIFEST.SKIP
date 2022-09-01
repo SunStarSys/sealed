@@ -3,5 +3,5 @@
 lib/Dotiac
 \.tar\.gz
 ^Makefile$
-
+^templates
 

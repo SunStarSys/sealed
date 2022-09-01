@@ -32,4 +32,6 @@ inc/
 /Makefile.old
 /MANIFEST.bak
 /pm_to_blib
+/MANIFEST
+/SIGNATURE
 /*.zip

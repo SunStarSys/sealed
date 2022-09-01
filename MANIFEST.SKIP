@@ -1,0 +1,7 @@
+\.git\b
+^enquiry\.pl$
+lib/Dotiac
+\.tar\.gz
+^Makefile$
+
+

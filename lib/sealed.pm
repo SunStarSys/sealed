@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.1.1);
+our $VERSION                    = qv(4.1.2);
 our $DEBUG;
 my $end;
 my %valid_attrs                 = (sealed => 1);
@@ -122,7 +122,7 @@ sub MODIFY_CODE_ATTRIBUTES {
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
       elsif ($op->can("pmreplroot")) {
-        push @op_stack, $op->pmreplroot, $op->next;
+        push @op_stack, $op->pmreplroot, $op->pmreplstart, $op->next;
       }
       elsif ($op->can("first")) {
 	for (my $kid = $op->first; ref $kid and $$kid; $kid = $kid->sibling) {
@@ -131,7 +131,7 @@ sub MODIFY_CODE_ATTRIBUTES {
 	unshift @op_stack, $op->next;
       }
       else {
-        unshift @op_stack, $op->next;
+        unshift @op_stack, $op->next, $op->parent;
       }
 
     }

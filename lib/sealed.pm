@@ -16,7 +16,7 @@ use B::Deparse  ();
 
 our $VERSION                    = qv(4.1.2);
 our $DEBUG;
-my $end;
+
 my %valid_attrs                 = (sealed => 1);
 my $p_obj                       = B::svref_2object(sub {&tweak});
 

@@ -155,9 +155,9 @@ sub import {
 
 __END__
 
-=head1 sealed
+=head1 NAME
 
-Subroutine attribute for compile-time method lookups on its typed lexicals.
+sealed - Subroutine attribute for compile-time method lookups on its typed lexicals.
 
 =over 4
 

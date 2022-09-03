@@ -7,5 +7,6 @@ WriteMakefile(
 	PREREQ_PM => {
 	  'B::Generate' => 0,
 	},
-	test => { TESTS => "bench.pl" },
+	test => { TESTS => "signature.pl bench.pl" },
+	SIGN => 1,
 );

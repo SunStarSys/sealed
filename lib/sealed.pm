@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.1.5);
+our $VERSION                    = qv(4.1.6);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);

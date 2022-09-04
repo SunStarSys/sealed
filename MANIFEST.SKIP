@@ -7,3 +7,4 @@ lib/Dotiac
 ^blib\b
 ^MANIFEST\.bak$
 ^pm_to_blib$
+^sealed-

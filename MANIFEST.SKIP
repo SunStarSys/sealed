@@ -1,4 +1,4 @@
-\.git\b
+\.git
 ^enquiry\.pl$
 lib/Dotiac
 \.tar\.gz
@@ -7,4 +7,3 @@ lib/Dotiac
 ^blib\b
 ^MANIFEST\.bak$
 ^pm_to_blib$
-

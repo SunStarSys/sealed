@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.1.4);
+our $VERSION                    = qv(4.1.5);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -219,3 +219,7 @@ drown out any performance gains this module would otherwise provide.
 =head1 SEE ALSO
 
 L<https://www.sunstarsys.com/essays/perl7-sealed-lexicals>
+
+=head1 LICENSE
+
+SPDX License Identifier: Apache License 2.0

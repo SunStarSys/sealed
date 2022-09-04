@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.1.6);
+our $VERSION                    = qv(4.1.7);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -222,4 +222,4 @@ L<https://www.sunstarsys.com/essays/perl7-sealed-lexicals>
 
 =head1 LICENSE
 
-SPDX License Identifier: Apache License 2.0
+Apache License 2.0

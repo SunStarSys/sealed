@@ -24,5 +24,5 @@ jobs:
       - name: Run Linter
 
         run: |
-          git clone -b master https://github.com/SunStarSys/sealed .
+          git clone -b "$GITHUB_REF_NAME" https://github.com/SunStarSys/orthrus .
           docker run -t --rm -v $(pwd):/src schaefj/linter

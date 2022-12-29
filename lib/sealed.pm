@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.3.0);
+our $VERSION                    = qv(4.3.1);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -117,7 +117,7 @@ sub MODIFY_CODE_ATTRIBUTES {
     my %processed_op;
     my $tweaked;
 
-    while (my $op = shift @op_stack and defined $^S) {
+    while (my $op = shift @op_stack and not defined $^S) {
       ref $op and $$op and not $processed_op{$$op}++
         or next;
 

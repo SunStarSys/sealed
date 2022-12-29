@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.2.1);
+our $VERSION                    = qv(4.2.2);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -22,6 +22,8 @@ my $p_obj                       = B::svref_2object(sub {&tweak});
 
 # B::PADOP (w/ ithreads) or B::SVOP
 my $gv_op                       = $p_obj->START->next->next;
+
+my @replaced_methops;
 
 sub tweak ($\@\@\@$\%) {
   my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $processed_op) = @_;
@@ -75,6 +77,7 @@ sub tweak ($\@\@\@$\%) {
         B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
+        push @replaced_methops, $methop;
         $op->next($gv);
 	# $op->sibparent($gv);
 	# $methop->refcnt_dec if $methop->can("refcnt_dec");

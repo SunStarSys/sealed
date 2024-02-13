@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.3.2);
+our $VERSION                    = qv(4.3.3);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -190,6 +190,8 @@ because this op-tree walker isn't as robust as it needs to be.
 For example, any "branching" done in the target method's argument
 stack, eg by using the '?:' ternary operator, will break this logic
 (pushmark ops are processed linearly, by $op->next walking, in tweak()).
+
+Also, :Sealed subs currently aren't reentrant, so don't do that.
 
 =head2 Compiling perl v5.30+ for functional mod_perl2 w/ithreads and httpd 2.4.x w/event mpm
 

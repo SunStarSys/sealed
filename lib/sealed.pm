@@ -149,11 +149,7 @@ sub MODIFY_CODE_ATTRIBUTES {
   }
   return grep !$valid_attrs{+lc}, @attrs;
 }
-CHECK {
-  for my $r (@replaced_methops) {
-#    $r->[0]->targ($r->[1], -1);
-  }
-}
+
 sub import {
   $DEBUG                        = $_[1];
 }

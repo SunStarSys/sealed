@@ -78,8 +78,6 @@ sub tweak ($\@\@\@$$\%) {
         push @replaced_methops, [$methop, $pad_names];
         $op->next($gv);
         B::cv_pad($old_pad);
-	# $op->sibparent($gv);
-	# $methop->refcnt_dec if $methop->can("refcnt_dec");
         $$processed_op{$$_}++ for $op, $gv, $methop;
         #$methop->targ($pad_names, 1);
         if (ref($gv) eq "B::PADOP") {

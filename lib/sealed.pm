@@ -14,7 +14,7 @@ use version;
 use B::Generate ();
 use B::Deparse  ();
 
-our $VERSION                    = qv(4.3.3);
+our $VERSION                    = qv(4.3.4);
 our $DEBUG;
 
 my %valid_attrs                 = (sealed => 1);
@@ -25,8 +25,8 @@ my $gv_op                       = $p_obj->START->next->next;
 
 my @replaced_methops;
 
-sub tweak ($\@\@\@$\%) {
-  my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $processed_op) = @_;
+sub tweak ($\@\@\@$$\%) {
+  my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $pad_names, $processed_op) = @_;
   my $tweaked                   = 0;
 
   if (${$op->next} and $op->next->name eq "padsv") {
@@ -69,24 +69,24 @@ sub tweak ($\@\@\@$\%) {
           if $DEBUG;
         my $method              = $class->can($method_name)
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?";
-
         # replace $methop
 
-        my $old_pad = B::cv_pad($cv_obj);
+        my $old_pad             = B::cv_pad($cv_obj);
         my $gv                  = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
-        B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
-        push @replaced_methops, $methop;
+        push @replaced_methops, [$methop, $pad_names];
         $op->next($gv);
+        B::cv_pad($old_pad);
 	# $op->sibparent($gv);
 	# $methop->refcnt_dec if $methop->can("refcnt_dec");
         $$processed_op{$$_}++ for $op, $gv, $methop;
-
+        #$methop->targ($pad_names, 1);
         if (ref($gv) eq "B::PADOP") {
           # answer the prayer, by reusing the $targ from the (passed) target pads
           $gv->padix($targ);
-          $$pads[--$idx][$targ] = $method;
+          undef $$pads[--$idx][$targ];
+          $$pads[$idx][$targ] = $method;
         }
 
         ++$tweaked;
@@ -124,7 +124,7 @@ sub MODIFY_CODE_ATTRIBUTES {
       $op->dump if defined $DEBUG and $DEBUG eq 'dump';
 
       if ($op->name eq "pushmark") {
-	$tweaked               += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, %processed_op};
+	$tweaked               += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, $pad_names, %processed_op};
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
       elsif (ref($op) eq "B::PMOP") {
@@ -146,12 +146,14 @@ sub MODIFY_CODE_ATTRIBUTES {
       eval {warn B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
-
   }
-
   return grep !$valid_attrs{+lc}, @attrs;
 }
-
+CHECK {
+  for my $r (@replaced_methops) {
+#    $r->[0]->targ($r->[1], -1);
+  }
+}
 sub import {
   $DEBUG                        = $_[1];
 }
@@ -191,7 +193,7 @@ For example, any "branching" done in the target method's argument
 stack, eg by using the '?:' ternary operator, will break this logic
 (pushmark ops are processed linearly, by $op->next walking, in tweak()).
 
-Also, :Sealed subs currently aren't reentrant, so don't do that.
+Also, :Sealed subs currently aren't reentrant without a custom patch to Perl's pad.c, so don't do that.
 
 =head2 Compiling perl v5.30+ for functional mod_perl2 w/ithreads and httpd 2.4.x w/event mpm
 

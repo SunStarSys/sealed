@@ -32,12 +32,15 @@ sub also_sealed :Sealed {
         return sub :Sealed {
             my Foo $b = $a;
             $inner->foo($b->foo($inner->bar, $inner, $bench->cmpthese));
-            $a->foo;
+
         };
     }
-    sub render :Sealed { my main $b = $a; local our @Q=1; $b->foo }
+    sub render :Sealed { my main $b = shift; local our @Q=1; my $c = $b->foo; return sub {$b->main::render} }
     $a->bar();
 }
+
+$y->main::render()->();
+
 my %tests = (
     func => \&func,
     method => \&method,
@@ -45,6 +48,5 @@ my %tests = (
     class => \&class,
     anon => \&anon,
 );
-
-cmpthese 20_000_000, \%tests;
+eval 'cmpthese 20_000_000, \%tests';
 ok(1);

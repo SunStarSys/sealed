@@ -219,7 +219,7 @@ drown out any performance gains this module would otherwise provide.
 
 =head1 SEE ALSO
 
-L<https://www.sunstarsys.com/essays/perl7-sealed-lexicals>
+L<https://blogs.sunstarsys.com/joe/perl7-sealed-lexicals>
 
 =head1 LICENSE
 

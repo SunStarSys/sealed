@@ -4,6 +4,7 @@
 /META.json
 /MYMETA.*
 *.o
+*.c
 *.pm.tdy
 *.bs
 

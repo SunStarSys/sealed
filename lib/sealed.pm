@@ -13,9 +13,12 @@ use version;
 
 use B::Generate ();
 use B::Deparse  ();
+use XSLoader ();
 
-our $VERSION                    = qv(4.3.4);
+our $VERSION                    = qv(5.0.0);
 our $DEBUG;
+
+XSLoader::load("sealed", $VERSION);
 
 my %valid_attrs                 = (sealed => 1);
 my $p_obj                       = B::svref_2object(sub {&tweak});
@@ -79,12 +82,11 @@ sub tweak ($\@\@\@$$\%) {
         $op->next($gv);
         B::cv_pad($old_pad);
         $$processed_op{$$_}++ for $op, $gv, $methop;
-        #$methop->targ($pad_names, 1);
+        _bump_xpadnl_max($pad_names, 1);
         if (ref($gv) eq "B::PADOP") {
           # answer the prayer, by reusing the $targ from the (passed) target pads
           $gv->padix($targ);
-          undef $$pads[--$idx][$targ];
-          $$pads[$idx][$targ] = $method;
+          $$pads[--$idx][$targ] = $method;
         }
 
         ++$tweaked;

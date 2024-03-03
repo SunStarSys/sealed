@@ -3,6 +3,7 @@ use Test::More tests => 1;
 use POSIX 'dup2';
 dup2 fileno(STDERR), fileno(STDOUT);
 use strict;
+use warnings;
 use Benchmark ':all';
 our ($x, $z);
 $x = bless {}, "Foo";
@@ -14,7 +15,9 @@ BEGIN {
   package Foo;
   use base 'sealed';
   use sealed 'deparse';
-  sub foo  { shift }
+  my $n;
+  sub foo {shift}
+  sub _foo :Sealed { my Foo $x = shift; $n++ ? $x->bar : $x->main::recursive }
   sub bar  { shift . "->::Foo::bar" }
 }
 sub func   {Foo::foo($x)}
@@ -32,14 +35,15 @@ sub also_sealed :Sealed {
         return sub :Sealed {
             my Foo $b = $a;
             $inner->foo($b->foo($inner->bar, $inner, $bench->cmpthese));
-
+            $a = $inner;
         };
     }
-    sub render :Sealed { my main $b = shift; local our @Q=1; my $c = $b->foo; return sub {$b->main::render} }
     $a->bar();
 }
 
-$y->main::render()->();
+sub recursive :Sealed { my main $b = shift; local our @Q=1; my $c = $b->_foo }
+
+print $y->main::recursive(), "\n";
 
 my %tests = (
     func => \&func,

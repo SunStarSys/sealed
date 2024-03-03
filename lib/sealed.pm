@@ -15,10 +15,13 @@ use B::Generate ();
 use B::Deparse  ();
 use XSLoader ();
 
-our $VERSION                    = qv(5.0.0);
+our $VERSION;
 our $DEBUG;
 
-XSLoader::load("sealed", $VERSION);
+BEGIN {
+  our $VERSION = qv(5.0.1);
+  XSLoader::load("sealed", $VERSION);
+}
 
 my %valid_attrs                 = (sealed => 1);
 my $p_obj                       = B::svref_2object(sub {&tweak});

@@ -1,5 +1,5 @@
 #!/usr/bin/env -S perl -Ilib
-use Test::More tests => 1;
+use Test::More tests => 2;
 use POSIX 'dup2';
 dup2 fileno(STDERR), fileno(STDOUT);
 use strict;
@@ -18,7 +18,7 @@ BEGIN {
   sub foo { shift }
   my $n;
   sub _foo :Sealed { my Foo $x = shift; $n++ ? $x->bar : $x->main::reentrant }
-  sub bar  { shift . "->::Foo::bar" }
+  sub bar  { 1 }
 }
 sub func   {Foo::foo($x)}
 BEGIN{@::ISA=('Foo')}
@@ -43,7 +43,7 @@ sub also_sealed :Sealed {
 
 sub reentrant :Sealed { my main $b = shift; local our @Q=1; my $c = $b->_foo }
 
-print $y->main::recursive(), "\n";
+ok($y->main::reentrant()==1);
 
 my %tests = (
     func => \&func,

@@ -52,5 +52,7 @@ my %tests = (
     class => \&class,
     anon => \&anon,
 );
-eval 'cmpthese 20_000_000, \%tests';
+
+cmpthese 20_000_000, \%tests;
+
 ok(1);

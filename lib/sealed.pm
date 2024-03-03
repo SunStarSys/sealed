@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.0.1);
+  our $VERSION = qv(5.0.2);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -79,17 +79,18 @@ sub tweak ($\@\@\@$$\%) {
 
         my $old_pad             = B::cv_pad($cv_obj);
         my $gv                  = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
+
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
         push @replaced_methops, [$methop, $pad_names];
         $op->next($gv);
         B::cv_pad($old_pad);
         $$processed_op{$$_}++ for $op, $gv, $methop;
-        _bump_xpadnl_max($pad_names, 1);
         if (ref($gv) eq "B::PADOP") {
           # answer the prayer, by reusing the $targ from the (passed) target pads
           $gv->padix($targ);
           $$pads[--$idx][$targ] = $method;
+          _set_lexical_varname($$lexical_varnames[$idx], $method_name);
         }
 
         ++$tweaked;

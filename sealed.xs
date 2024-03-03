@@ -6,14 +6,16 @@
 MODULE = sealed    PACKAGE = sealed
 
 void
-_bump_xpadnl_max(o, t)
+_set_lexical_varname(o, n)
         SV*             o
-        SV*             t
+        SV*             n
      PROTOTYPE: $$
      CODE:
         if (items == 2) {
-            IV targ = SvIV(t);
-            PADNAMELIST* pn   = INT2PTR(PADNAMELIST*,SvIV(o));
-            if (targ > 0)
-              pn->xpadnl_max += targ;
+            STRLEN len;
+            char *name = SvPV(n, len);
+            PADNAME* pn   = INT2PTR(PADNAME*,SvIV(o));
+            pn->xpadn_refcnt++;
+            //Safefree(pn->xpadn_pv);
+            //memcpy(pn->xpadn_pv, name, len);
         }

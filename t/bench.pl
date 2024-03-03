@@ -15,9 +15,9 @@ BEGIN {
   package Foo;
   use base 'sealed';
   use sealed 'deparse';
+  sub foo { shift }
   my $n;
-  sub foo {shift}
-  sub _foo :Sealed { my Foo $x = shift; $n++ ? $x->bar : $x->main::recursive }
+  sub _foo :Sealed { my Foo $x = shift; $n++ ? $x->bar : $x->main::reentrant }
   sub bar  { shift . "->::Foo::bar" }
 }
 sub func   {Foo::foo($x)}
@@ -41,7 +41,7 @@ sub also_sealed :Sealed {
     $a->bar();
 }
 
-sub recursive :Sealed { my main $b = shift; local our @Q=1; my $c = $b->_foo }
+sub reentrant :Sealed { my main $b = shift; local our @Q=1; my $c = $b->_foo }
 
 print $y->main::recursive(), "\n";
 

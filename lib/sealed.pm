@@ -29,8 +29,6 @@ my $p_obj                       = B::svref_2object(sub {&tweak});
 # B::PADOP (w/ ithreads) or B::SVOP
 my $gv_op                       = $p_obj->START->next->next;
 
-my @replaced_methops;
-
 sub tweak ($\@\@\@$$\%) {
   my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $pad_names, $processed_op) = @_;
   my $tweaked                   = 0;
@@ -81,7 +79,6 @@ sub tweak ($\@\@\@$$\%) {
         B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
-        push @replaced_methops, [$methop, $method];
         $op->next($gv);
         $$processed_op{$$_}++ for $op, $gv, $methop;
         if (ref($gv) eq "B::PADOP") {
@@ -130,7 +127,7 @@ sub MODIFY_CODE_ATTRIBUTES {
 	$tweaked               += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, $pad_names, %processed_op};
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
-      elsif (ref($op) eq "B::PMOP") {
+      if (ref($op) eq "B::PMOP") {
         push @op_stack, $op->pmreplroot, $op->pmreplstart, $op->next;
       }
       elsif (grep $_ eq ref($op), "B::METHOP", "B::UNOP") {

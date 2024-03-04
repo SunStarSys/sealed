@@ -18,11 +18,11 @@ void _padname_add(PADLIST *padlist, IV idx)
             SV **old_curpad            = PL_curpad;
             AV *old_comppad            = PL_comppad;
             OP* old_op                 = PL_op;
-        #ifdef HAVE_PADNAMELIST
+#ifdef HAVE_PADNAMELIST
             PADNAMELIST *old_comppad_name = PL_comppad_name;
-        #else
+#else
             AV *old_comppad_name = PL_comppad_name;
-        #endif
+#endif
             PADNAME **names;
             PL_comppad_name      = PadlistNAMES(padlist);
             PL_comppad           = PadlistARRAY(padlist)[1];

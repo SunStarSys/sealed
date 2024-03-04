@@ -127,10 +127,10 @@ sub MODIFY_CODE_ATTRIBUTES {
 	$tweaked               += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, $pad_names, %processed_op};
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
-      if (ref($op) eq "B::PMOP") {
+      if ($op->isa("B::PMOP")) {
         push @op_stack, $op->pmreplroot, $op->pmreplstart, $op->next;
       }
-      elsif (grep $_ eq ref($op), "B::METHOP", "B::UNOP") {
+      elsif ($op->can("first")) {
 	for (my $kid = $op->first; ref $kid and $$kid; $kid = $kid->sibling) {
 	  push @op_stack, $kid;
 	}
@@ -143,7 +143,7 @@ sub MODIFY_CODE_ATTRIBUTES {
     }
 
     if (defined $DEBUG and $DEBUG eq "deparse" and $tweaked) {
-      eval {warn "sub ", $cv_obj->NAME_HEK // "ANON", " ", B::Deparse->new->coderef2text($rv), "\n"};
+      eval {warn "sub ", $cv_obj->GV->NAME // $cv_obj->NAME_HEK // "ANON", " ", B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
   }

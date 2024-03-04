@@ -54,7 +54,7 @@ sub tweak ($\@\@\@$$\%) {
       elsif ($op->next->name eq "method_named" and defined $class) {
         my $methop              = $op->next;
 
-        my ($method_name, $idx, $targ);
+        my ($method_name, $idx, $targ, $gv, $old_pad);
 
         if (ref($gv_op) eq "B::PADOP") {
           $targ                 = $methop->targ;
@@ -76,23 +76,19 @@ sub tweak ($\@\@\@$$\%) {
         my $method              = $class->can($method_name)
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?";
         # replace $methop
-
-        my $old_pad             = B::cv_pad($cv_obj);
-        my $gv                  = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
-
+        $old_pad                = B::cv_pad($cv_obj);
+        $gv                     = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
-        push @replaced_methops, [$methop, $pad_names];
+        push @replaced_methops, [$methop, $method];
         $op->next($gv);
-        B::cv_pad($old_pad);
         $$processed_op{$$_}++ for $op, $gv, $methop;
         if (ref($gv) eq "B::PADOP") {
-          # answer the prayer, by reusing the $targ from the (passed) target pads
-          $gv->padix($targ);
+          _padname_add($gv->padix, $pad_names, $cv_obj->PADLIST);
           $$pads[--$idx][$targ] = $method;
-          _set_lexical_varname($$lexical_varnames[$idx], $method_name);
+          $gv->padix($targ);
         }
-
+        B::cv_pad($old_pad);
         ++$tweaked;
       }
     }
@@ -114,7 +110,7 @@ sub MODIFY_CODE_ATTRIBUTES {
   if ((not defined $DEBUG or $DEBUG ne "disabled") and grep $valid_attrs{+lc}, @attrs) {
 
     my $cv_obj                  = B::svref_2object($rv);
-    my @op_stack                = ($cv_obj->START);
+    my @op_stack                = $cv_obj->START;
     my ($pad_names, @p)         = $cv_obj->PADLIST->ARRAY;
     my @pads                    = map $_->object_2svref, @p;
     my @lexical_varnames        = $pad_names->ARRAY;

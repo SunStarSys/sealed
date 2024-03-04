@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.0.2);
+  our $VERSION = qv(5.1.1);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -84,7 +84,7 @@ sub tweak ($\@\@\@$$\%) {
         $op->next($gv);
         $$processed_op{$$_}++ for $op, $gv, $methop;
         if (ref($gv) eq "B::PADOP") {
-          _padname_add($gv->padix, $pad_names, $cv_obj->PADLIST);
+          _padname_add($cv_obj->PADLIST, $gv->padix);
           $$pads[--$idx][$targ] = $method;
           $gv->padix($targ);
         }

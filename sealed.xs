@@ -6,11 +6,8 @@
 
 MODULE = sealed    PACKAGE = sealed
 
-void _padname_add(idx,pnl,padlist)
-        IV              idx
-        PADNAMELIST*    pnl
-        PADLIST*        padlist
-    PROTOTYPE: $$$
+void _padname_add(PADLIST *padlist, IV idx)
+    PROTOTYPE: $$
     CODE:
         #ifdef HAVE_PADNAMELIST
             I32 old_padix              = PL_padix;

@@ -143,7 +143,7 @@ sub MODIFY_CODE_ATTRIBUTES {
     }
 
     if (defined $DEBUG and $DEBUG eq "deparse" and $tweaked) {
-      eval {warn B::Deparse->new->coderef2text($rv), "\n"};
+      eval {warn "sub ", $cv_obj->NAME_HEK // "ANON", " ", B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
   }

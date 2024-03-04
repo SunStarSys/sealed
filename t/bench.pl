@@ -16,9 +16,9 @@ BEGIN {
   use base 'sealed';
   use sealed 'deparse';
   sub foo { shift }
+  sub bar  { 1 }
   my $n;
   sub _foo :Sealed { my Foo $x = shift; $n++ ? $x->bar : $x->main::reentrant }
-  sub bar  { 1 }
 }
 sub func   {Foo::foo($x)}
 BEGIN{@::ISA=('Foo')}

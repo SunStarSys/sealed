@@ -1,4 +1,8 @@
-Changs w/ 4.1.7:
+Changes w/ 5.1.1:
+
+- Segfault-free reentrant behavior w/ test
+
+Changes w/ 4.1.7:
 
 - Kwalitee final touches
 

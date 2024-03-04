@@ -9,7 +9,6 @@ MODULE = sealed    PACKAGE = sealed
 void _padname_add(PADLIST *padlist, IV idx)
     PROTOTYPE: $$
     CODE:
-        #ifdef HAVE_PADNAMELIST
             I32 old_padix              = PL_padix;
             I32 old_comppad_name_fill  = PL_comppad_name_fill;
             I32 old_min_intro_pending  = PL_min_intro_pending;
@@ -19,8 +18,11 @@ void _padname_add(PADLIST *padlist, IV idx)
             SV **old_curpad            = PL_curpad;
             AV *old_comppad            = PL_comppad;
             OP* old_op                 = PL_op;
-
+        #ifdef HAVE_PADNAMELIST
             PADNAMELIST *old_comppad_name = PL_comppad_name;
+        #else
+            AV *old_comppad_name = PL_comppad_name;
+        #endif
             PADNAME **names;
             PL_comppad_name      = PadlistNAMES(padlist);
             PL_comppad           = PadlistARRAY(padlist)[1];

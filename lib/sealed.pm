@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.1);
+  our $VERSION = qv(5.1.2);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -78,17 +78,20 @@ sub tweak ($\@\@\@$$\%) {
         # replace $methop
         $old_pad                = B::cv_pad($cv_obj);
         $gv                     = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
+        B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
         push @replaced_methops, [$methop, $method];
         $op->next($gv);
         $$processed_op{$$_}++ for $op, $gv, $methop;
         if (ref($gv) eq "B::PADOP") {
+          # $gv->padix is useless, as well as completely missing a padname!
+          # so we answer the prayer by recycling $$pads[--$idx][$targ], which
+          # has the correct semantics (for $method) under assignment.
           _padname_add($cv_obj->PADLIST, $gv->padix);
           $$pads[--$idx][$targ] = $method;
           $gv->padix($targ);
         }
-        B::cv_pad($old_pad);
         ++$tweaked;
       }
     }

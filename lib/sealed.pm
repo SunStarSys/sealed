@@ -82,11 +82,16 @@ sub tweak ($\@\@\@$$\%) {
         $op->next($gv);
         $$processed_op{$$_}++ for $op, $gv, $methop;
         if (ref($gv) eq "B::PADOP") {
-          # $gv->padix is useless, as well as completely missing a padname!
+          # the pad entry associated to $gv->padix is pure garbage,
+          # as well as completely missing a padname!
           # so we answer the prayer by recycling $$pads[--$idx][$targ], which
           # has the correct semantics (for $method) under assignment.
-          _padname_add($cv_obj->PADLIST, $gv->padix);
+          my $padix = $gv->padix;
+          _padname_add($cv_obj->PADLIST, $padix);
           $$pads[--$idx][$targ] = $method;
+          my (undef, @p) = $cv_obj->PADLIST->ARRAY;
+          $pads = [map $_->object_2svref, @p];
+          $$pads[$idx][$padix] = undef;
           $gv->padix($targ);
         }
         ++$tweaked;

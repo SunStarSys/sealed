@@ -1,4 +1,3 @@
-#undef STATIC
 #include "EXTERN.h"
 #include "perl.h"
 #include "perlapi.h"

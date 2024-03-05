@@ -44,4 +44,3 @@ void _padname_add(PADLIST *padlist, IV idx)
             PL_comppad           = old_comppad;
             PL_comppad_name      = old_comppad_name;
             PL_op                = old_op;
-        #endif

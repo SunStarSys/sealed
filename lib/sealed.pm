@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.5);
+  our $VERSION = qv(5.1.6);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -75,7 +75,7 @@ sub tweak ($\@\@\@$$\%) {
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?";
         # replace $methop
         $old_pad                = B::cv_pad($cv_obj);
-        $gv                     = B::GVOP->new($gv_op->name, $gv_op->flags, $method);
+        $gv                     = B::GVOP->new($gv_op->name, $gv_op->flags, ref($gv_op) eq "B::PADOP" ? 0 : $method);
         B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
@@ -89,9 +89,6 @@ sub tweak ($\@\@\@$$\%) {
           my $padix = $gv->padix;
           _padname_add($cv_obj->PADLIST, $padix);
           $$pads[--$idx][$targ] = $method;
-          my (undef, @p) = $cv_obj->PADLIST->ARRAY;
-          $pads = [map $_->object_2svref, @p];
-          $$pads[$idx][$padix] = undef;
           $gv->padix($targ);
         }
         ++$tweaked;
@@ -132,6 +129,7 @@ sub MODIFY_CODE_ATTRIBUTES {
 	$tweaked               += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, $pad_names, %processed_op};
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
+
       if ($op->isa("B::PMOP")) {
         push @op_stack, $op->pmreplroot, $op->pmreplstart, $op->next;
       }
@@ -148,7 +146,7 @@ sub MODIFY_CODE_ATTRIBUTES {
     }
 
     if (defined $DEBUG and $DEBUG eq "deparse" and $tweaked) {
-      eval {warn "sub ", $cv_obj->GV->NAME // $cv_obj->NAME_HEK // "ANON", " ", B::Deparse->new->coderef2text($rv), "\n"};
+      eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " ", B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
   }

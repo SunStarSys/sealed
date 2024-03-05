@@ -206,6 +206,8 @@ during httpd server (graceful) restart.
 
 =head1 CAVEATS
 
+KISS.
+
 Don't use typed lexicals under a :sealed sub for API method argument
 processing, if you are writing a reusable OO module (on CPAN, say). This
 module primarily targets end-applications: virtual method lookups and duck

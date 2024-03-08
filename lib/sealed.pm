@@ -92,7 +92,10 @@ sub tweak ($\@\@\@$$\%) {
           my (undef, @p) = $cv_obj->PADLIST->ARRAY;
           $pads = [ map $_->object_2svref, @p ];
           $$pads[--$idx][$padix] = $method;
-          $$pads[$idx][$targ] .=":sealed";
+          $$pads[$idx][$targ] .= ":sealed";
+        }
+        else {
+          $$pads[--$idx][$targ] .= ":sealed";
         }
         ++$tweaked;
       }

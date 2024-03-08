@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.8);
+  our $VERSION = qv(5.1.9);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -92,7 +92,7 @@ sub tweak ($\@\@\@$$\%) {
           my (undef, @p) = $cv_obj->PADLIST->ARRAY;
           $pads = [ map $_->object_2svref, @p ];
           $$pads[--$idx][$padix] = $method;
-          $$pads[$idx][$targ] .= ":sealed";
+          $$pads[$idx][$targ] .= ":compiled";
         }
         else {
           $$pads[--$idx][$targ] .= ":sealed";
@@ -152,7 +152,7 @@ sub MODIFY_CODE_ATTRIBUTES {
     }
 
     if (defined $DEBUG and $DEBUG eq "deparse" and $tweaked) {
-      eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " ", B::Deparse->new->coderef2text($rv), "\n"};
+      eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
   }

@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.10);
+  our $VERSION = qv(5.1.11);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -66,7 +66,7 @@ sub tweak ($\@\@\@$$\%) {
             (ref $method_name and warn __PACKAGE__ . ": target collision: targ=$targ");
         }
         else {
-          $method_name          = ${$methop->meth_sv->object_2svref};
+          $method_name          =  ${$methop->meth_sv->object_2svref};
         }
 
         warn __PACKAGE__, ": compiling $class->$method_name lookup.\n"
@@ -93,6 +93,9 @@ sub tweak ($\@\@\@$$\%) {
           $pads = [ map $_->object_2svref, @p ];
           $$pads[--$idx][$padix] = $method;
           $$pads[$idx][$targ] .= ":compiled";
+        }
+        else {
+          ${$methop->meth_sv->object_2svref} .= ":sealed";
         }
 
         ++$tweaked;

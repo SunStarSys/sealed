@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.9);
+  our $VERSION = qv(5.1.10);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -94,9 +94,7 @@ sub tweak ($\@\@\@$$\%) {
           $$pads[--$idx][$padix] = $method;
           $$pads[$idx][$targ] .= ":compiled";
         }
-        else {
-          $$pads[--$idx][$targ] .= ":sealed";
-        }
+
         ++$tweaked;
       }
     }

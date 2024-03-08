@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.11);
+  our $VERSION = qv(5.1.12);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -95,7 +95,7 @@ sub tweak ($\@\@\@$$\%) {
           $$pads[$idx][$targ] .= ":compiled";
         }
         else {
-          ${$methop->meth_sv->object_2svref} .= ":sealed";
+          ${$methop->meth_sv->object_2svref} .= ":compiled";
         }
 
         ++$tweaked;

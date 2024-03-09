@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.12);
+  our $VERSION = qv(5.1.13);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -231,7 +231,7 @@ drown out any performance gains this module would otherwise provide.
 
 =head1 SEE ALSO
 
-L<https://blogs.sunstarsys.com/joe/perl7-sealed-lexicals>
+L<https://www.iconoclasts.blog/joe/perl7-sealed-lexicals>
 
 =head1 LICENSE
 

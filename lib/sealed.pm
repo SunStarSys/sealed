@@ -5,7 +5,7 @@
 # Author: Joe Schaefer <joe@sunstarsys.com>
 
 package sealed;
-use v5.22;
+use v5.28;
 
 use strict;
 use warnings;

@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.13);
+  our $VERSION = qv(5.1.14);
   XSLoader::load("sealed", $VERSION);
 }
 

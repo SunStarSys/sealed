@@ -19,8 +19,9 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(5.1.15);
+  our $VERSION = qv(6.0.0);
   XSLoader::load("sealed", $VERSION);
+  sub UNIVERSAL::TYPEDSCALAR {shift}
 }
 
 my %valid_attrs                  = (sealed => 1);
@@ -162,6 +163,14 @@ sub MODIFY_CODE_ATTRIBUTES {
 
 sub import {
   $DEBUG                         = $_[1];
+  my ($invoker) = caller;
+  local $@;
+  eval <<EOT;
+  package $invoker;
+  require Lexical::Types;
+  Lexical::Types->import()
+EOT
+  die $@ if $@;
 }
 
 1;

@@ -19,7 +19,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(6.0.1);
+  our $VERSION = qv(6.0.2);
   XSLoader::load("sealed", $VERSION);
   *UNIVERSAL::TYPEDSCALAR = \&TYPEDSCALAR;
 }

@@ -65,7 +65,7 @@ cmpthese 20_000_000, \%tests;
 
 ok(1);
 
-use constant LOOPS => 10;
+use constant LOOPS => 3;
 
 sub method2 {
   my $obj = "main";

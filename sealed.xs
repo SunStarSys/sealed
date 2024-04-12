@@ -4,9 +4,9 @@
 #include "XSUB.h"
 
 MODULE = sealed    PACKAGE = sealed
+PROTOTYPES: DISABLED
 
 void _padname_add(PADLIST *padlist, IV idx)
-    PROTOTYPE: $$
     CODE:
             I32 old_padix              = PL_padix;
             I32 old_comppad_name_fill  = PL_comppad_name_fill;
@@ -45,3 +45,9 @@ void _padname_add(PADLIST *padlist, IV idx)
             PL_comppad_name      = old_comppad_name;
 	    PL_cv_has_eval       = old_cv_has_eval;
             PL_op                = old_op;
+
+SV *TYPEDSCALAR(SV *class, ...)
+      CODE:
+         RETVAL=newSVsv(class);
+      OUTPUT:
+         RETVAL

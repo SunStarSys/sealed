@@ -21,7 +21,7 @@ our $DEBUG;
 BEGIN {
   our $VERSION = qv(6.0.1);
   XSLoader::load("sealed", $VERSION);
-  sub UNIVERSAL::TYPEDSCALAR {shift}
+  *UNIVERSAL::TYPEDSCALAR = \&TYPEDSCALAR;
 }
 
 my %valid_attrs                  = (sealed => 1);

@@ -43,8 +43,8 @@ sub also_sealed :Sealed {
             $inner->foo($b->foo($inner->bar, $inner, $bench->cmpthese));
             $a = $inner;
             $a->foo;
-            $b->bar;
-        };
+            $b->bar; # error!
+          };
     }
     $a->bar();
 }

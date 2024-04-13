@@ -41,11 +41,13 @@ sub convert_script_to_compiled_handler {
   my $nph = substr($base, 0, 4) eq 'nph-' ? '$_[0]->assbackwards(1);' : "";
   my $script_name = $self->get_script_name || $0;
 
+  # handle sealed.pm's source filter ourselves, since the string eval won't.
+  s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms for ${$self->{CODE}};
+
   my $eval = join '',
     'package ',
     $self->{PACKAGE}, ";",
     "use base 'sealed';",
-    "use sealed 'deparse';",
     "sub handler :Sealed {",
     "local \$0 = '$script_name';",
     $nph,

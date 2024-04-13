@@ -45,6 +45,7 @@ sub convert_script_to_compiled_handler {
     'package ',
     $self->{PACKAGE}, ";",
     "use base 'sealed';",
+    "use sealed 'deparse';",
     "sub handler :Sealed {",
     "local \$0 = '$script_name';",
     $nph,

@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(6.0.6);
+  our $VERSION = qv(6.0.7);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -76,7 +76,7 @@ sub tweak ($\@\@\@$$\%) {
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?";
         # replace $methop
         $old_pad                 = B::cv_pad($cv_obj);
-        $gv                      = B::GVOP->new($gv_op->name, $gv_op->flags, ref($gv_op) eq "B::PADOP" ? *tweak : $method);
+        $gv                      = new($gv_op->name, $gv_op->flags, ref($gv_op) eq "B::PADOP" ? *tweak : $method, $cv_obj->PADLIST);
         B::cv_pad($old_pad);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);

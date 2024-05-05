@@ -3,11 +3,7 @@
 #include "perlapi.h"
 #include "XSUB.h"
 
-
-/*
-   #define PERL_CUSTOM_OPS
-   now defined by Makefile.PL, if building for 5.8.x
- */
+/* LOTS OF CRIBBING FROM B::Generate; just avoiding its static variables */
 static inline I32
 op_name_to_num(SV * name)
 {
@@ -63,7 +59,12 @@ op_name_to_num(SV * name)
     } else                                                                  \
         param = newSVsv(sv);                                                \
     o = _newOPgen(typenum, flags, param);                                   \
-    ST(0) = sv_newmortal();                                                 \
+    if (B_class == "B::PADOP") {                                            \
+       PADOP* p = o;                                                        \
+       PADNAME **names = PadnamelistARRAY((PADNAMELIST *)PadlistARRAY(padlist)[0]); \
+       names[p->op_padix] = newPADNAMEpvn("&", 1);                          \
+    }                                                                       \
+  ST(0) = sv_newmortal();                                                   \
     sv_setiv(newSVrv(ST(0), B_class), PTR2IV(o));                           \
 }
 
@@ -100,21 +101,9 @@ op_name_to_num(SV * name)
 	    PL_cv_has_eval       = old_cv_has_eval;             \
             PL_op                = old_op;
 
-
-MODULE = sealed    PACKAGE = sealed
-
-void _padname_add(PADLIST *padlist, IV idx)
-    PROTOTYPE: $$
-    CODE:
-            PRE_OP;
-            PADNAME **names;                                            \
-            names                = PadnamelistARRAY((PADNAMELIST *)PadlistARRAY(padlist)[0]);
-
-            names[idx]           = newPADNAMEpvn("&", 1);
-            POST_OP;
-
 MODULE = sealed    PACKAGE = sealed               PREFIX = GVOP_
-SV * GVOP_new(SV *type, I32 flags, SV *sv, PADLIST* padlist)
+
+SV *GVOP_new(SV *type, I32 flags, SV *sv, PADLIST* padlist)
 
     CODE:
          PRE_OP;

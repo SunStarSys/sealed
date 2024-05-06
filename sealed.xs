@@ -106,10 +106,10 @@ MODULE = sealed    PACKAGE = sealed               PREFIX = GVOP_
 SV *GVOP_new(SV *type, I32 flags, SV *sv, PADLIST* padlist)
 
     CODE:
-#ifdef USE_ITHREADS
          PRE_OP;
+#ifdef USE_ITHREADS
          NEW_SVOP(newPADOP, "B::PADOP");
-         POST_OP;
 #else
          NEW_SVOP(newSVOP, "B::SVOP");
 #endif
+         POST_OP;

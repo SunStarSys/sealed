@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.3);
+  our $VERSION = qv(8.0.4);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -180,8 +180,21 @@ sub filter {
     local $_ = $2;
     my $suffix = "";
     no warnings 'uninitialized';
-    while (m!((?:\w|::)*)\s*(\$\w+)(\s*,\s*)?!g) {
-      $suffix .= "my $1 $2 = shift // '$1';";
+    while (m!((?:\w|::)*)\s*(\$\w+)(\s*\S*=\s*\S*)?(\s*,\s*)?!g) {
+      $suffix .= "my $1 $2 = ";
+      tr!=!!d for my $default = $3;
+      if (($default =~ tr!/!!d)==2) {
+        $suffix .= "shift // $default;";
+      }
+      elsif (($default =~ tr!|!!d)==2) {
+        $suffix .= "shift || $default;";
+      }
+      elsif ($default) {
+        $suffix .= "\@_ ? shift : $default;";
+      }
+      else {
+        $suffix .= "shift;"
+      }
     }
     "$prefix { $suffix";
   %gmse if $status > 0;

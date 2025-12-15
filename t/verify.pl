@@ -32,7 +32,7 @@ my main $y; #sealed src filter transforms this into: my main $y = 'main';
 sub sealed :Sealed {
     $y->foo();
   }
-sub also_sealed :Sealed (main $a) {
+sub also_sealed :Sealed (__PACKAGE__ $a, $b//=2, $c, $d=3, $e||=4) {
     if ($a) {
         my Benchmark $bench;
         my $inner = $a;

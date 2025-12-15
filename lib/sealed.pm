@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.1);
+  our $VERSION = qv(8.0.2);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -92,10 +92,10 @@ sub tweak ($\@\@\@$$\%) {
           $$pads[--$idx][$padix] = $DEBUG ne "verify" ? $method : sub {
             goto &$method if $method == $_[0]->can($method_name);
             require Carp;
-            eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($method), "\n"};
+            eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
             Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:verified sub!");
           };
-          $$pads[$idx][$targ]   .= ":compiled";
+          $$pads[$idx][$targ]   .= $DEBUG ne "verify" ? ":compiled" : ":verified";
         }
         else {
           ${$methop->meth_sv->object_2svref} .= $DEBUG ne "verify" ? ":compiled" : ":verified";

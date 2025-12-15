@@ -31,10 +31,8 @@ my main $y; #sealed src filter transforms this into: my main $y = 'main';
 
 sub sealed :Sealed {
     $y->foo();
-}
-
-sub also_sealed :Sealed {
-    my main $a = shift;
+  }
+sub also_sealed :Sealed (main $a) {
     if ($a) {
         my Benchmark $bench;
         my $inner = $a;

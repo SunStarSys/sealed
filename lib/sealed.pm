@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.2);
+  our $VERSION = qv(8.0.3);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -92,8 +92,9 @@ sub tweak ($\@\@\@$$\%) {
           $$pads[--$idx][$padix] = $DEBUG ne "verify" ? $method : sub {
             goto &$method if $method == $_[0]->can($method_name);
             require Carp;
+            $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
             eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
-            Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:verified sub!");
+            Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:FAILED lookup");
           };
           $$pads[$idx][$targ]   .= $DEBUG ne "verify" ? ":compiled" : ":verified";
         }
@@ -174,9 +175,18 @@ sub filter {
   my ($self) = @_;
   my $status = filter_read;
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
-  $status;
+  s%(\s*sub\s+\w+\s*(?::\s*\w+(?:\(\S+\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(\S+\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{%
+    my $prefix = $1;
+    local $_ = $2;
+    my $suffix = "";
+    no warnings 'uninitialized';
+    while (m!((?:\w|::)*)\s*(\$\w+)(\s*,\s*)?!g) {
+      $suffix .= "my $1 $2 = shift // '$1';";
+    }
+    "$prefix { $suffix";
+  %gmse if $status > 0;
+  return $status;
 }
-
 1;
 
 __END__
@@ -190,9 +200,9 @@ sealed - Subroutine attribute for compile-time method lookups on its typed lexic
 
     use Apache2::RequestRec;
     use base 'sealed';
+    use sealed 'deparse';
 
-    sub handler :Sealed {
-      my Apache2::RequestRec $r = shift;
+    sub handler :Sealed (Apache2::RequestRec $r) {
       $r->content_type("text/html"); # compile-time method lookup.
     ...
 

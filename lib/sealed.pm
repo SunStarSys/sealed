@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.9);
+  our $VERSION = qv(8.1.0);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -75,7 +75,20 @@ sub tweak ($\@\@\@$$\%) {
         my $method               = $class->can($method_name)
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?\n";
         # replace $methop
-        $gv                      = new($gv_op->name, $gv_op->flags, ref($gv_op) eq "B::PADOP" ? *tweak : $method, $cv_obj->PADLIST);
+        my $m = sub {
+          goto &$method if $method == $_[0]->can($method_name);
+          require Carp;
+          $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
+          local $@;
+          eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ",
+                  B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
+          Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:FAILED lookup");
+        };
+
+        $gv                      = new($gv_op->name, $gv_op->flags,
+                                       ref($gv_op) eq "B::PADOP" ? *tweak :
+                                       $DEBUG eq "verify" ? $m : $method,
+                                       $cv_obj->PADLIST);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
         $op->next($gv);
@@ -91,14 +104,7 @@ sub tweak ($\@\@\@$$\%) {
           my $padix = $gv->padix;
           my (undef, @p)         = $cv_obj->PADLIST->ARRAY;
           $pads = [ map defined ? $_->object_2svref : $_, @p ];
-          $$pads[--$idx][$padix] = $DEBUG ne "verify" ? $method : sub {
-            goto &$method if $method == $_[0]->can($method_name);
-            require Carp;
-            $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
-            local $@;
-            eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
-            Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:FAILED lookup");
-          };
+          $$pads[--$idx][$padix] = $DEBUG eq "verify" ? $m : $method;
           $$pads[$idx][$targ]   .= $DEBUG ne "verify" ? ":compiled" : ":verified";
         }
         else {

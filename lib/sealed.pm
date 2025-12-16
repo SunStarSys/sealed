@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.4);
+  our $VERSION = qv(8.0.5);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -81,6 +81,8 @@ sub tweak ($\@\@\@$$\%) {
         $op->next($gv);
         $$processed_op{$$_}++ for $op, $gv, $methop;
 
+        no warnings 'uninitialized';
+
         if (ref($gv) eq "B::PADOP") {
           # the pad entry associated to $gv->padix is (correctly flagged) garbage,
           # as well as completely missing a padname!
@@ -93,6 +95,7 @@ sub tweak ($\@\@\@$$\%) {
             goto &$method if $method == $_[0]->can($method_name);
             require Carp;
             $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
+            local $@;
             eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
             Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:FAILED lookup");
           };
@@ -175,29 +178,56 @@ sub filter {
   my ($self) = @_;
   my $status = filter_read;
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
-  s%(\s*sub\s+\w+\s*(?::\s*\w+(?:\(\S+\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(\S+\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{%
+  no warnings 'uninitialized';
+  s(^(\s*sub\s+(\w[\w:]*)?\s*(?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{)(
     my $prefix = $1;
-    local $_ = $2;
+    my $name   = $2;
+    local $_   = $3;
     my $suffix = "";
-    no warnings 'uninitialized';
-    while (m!((?:\w|::)*)\s*(\$\w+)(\s*\S*=\s*\S*)?(\s*,\s*)?!g) {
-      $suffix .= "my $1 $2 = ";
-      tr!=!!d for my $default = $3;
-      if (($default =~ tr!/!!d)==2) {
-        $suffix .= "shift // $default;";
+    my (@types, @stypes, %types, %stypes, @vars, @defaults);
+    s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{
+      local $@;
+      if ($1 eq "__PACKAGE__" || $1 eq "__PACKAGE__::SUPER"
+          || (length $1 && eval "require $1")) {
+        $suffix .= "my $1 $2 = ";
+        tr!=!!d for my $default = $3;
+        if (($default =~ tr!/!!d)==2) {
+          $suffix .= "shift // $default;";
+        }
+        elsif (($default =~ tr!|!!d)==2) {
+          $suffix .= "shift || $default;";
+        }
+        elsif ($default) {
+          $suffix .= "\@_ ? shift : $default;";
+        }
+        else {
+          $suffix .= "shift;"
+        }
+        push @types, "Object";
+        push @defaults, $default;
       }
-      elsif (($default =~ tr!|!!d)==2) {
-        $suffix .= "shift || $default;";
+      elsif (length $1) {
+        push @types, $1;
+        push @stypes, $1 unless $stypes{$1}++;
+        tr!=/|!!d for my $default = $3;
+        push @defaults, $default;
       }
-      elsif ($default) {
-        $suffix .= "\@_ ? shift : $default;";
-      }
-      else {
-        $suffix .= "shift;"
-      }
+      push @vars, substr($2,1);
+      "$2$3$4"
+    }gmse;
+    if ($name and $DEBUG eq "verify") {
+      my $t = $prefix;
+      $prefix = "";
+      $prefix .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
+      $prefix .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
+      $prefix .= "],},{ positional => [";
+      $prefix .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
+      $prefix .= "],},];";
+      $prefix .= $t;
     }
-    "$prefix { $suffix";
-  %gmse if $status > 0;
+    #warn "$prefix ($_) { $suffix";
+    "$prefix ($_) { no warnings qw/experimental shadow/; $suffix";
+  )gmse if $status > 0;
   return $status;
 }
 1;
@@ -211,7 +241,6 @@ sealed - Subroutine attribute for compile-time method lookups on its typed lexic
 
 =head1 SYNOPSIS
 
-    use Apache2::RequestRec;
     use base 'sealed';
     use sealed 'deparse';
 

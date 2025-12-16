@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.6);
+  our $VERSION = qv(8.0.7);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -224,8 +224,9 @@ sub filter {
       $prefix .= "],},];";
       $prefix .= $t;
     }
-    # warn "$prefix ($_) { $suffix";
-    "$prefix ($_) { no warnings qw/experimental shadow/; $suffix";
+    $prefix .= " ($_)" if $DEBUG eq "verify";
+    # warn "$prefix { $suffix";
+    "$prefix { no warnings qw/experimental shadow/; $suffix";
   )gmse if $status > 0;
   return $status;
 }

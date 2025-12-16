@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.0);
+  our $VERSION = qv(8.1.1);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -30,7 +30,7 @@ my $p_obj                        = B::svref_2object(sub {&tweak});
 # B::PADOP (w/ ithreads) or B::SVOP
 my $gv_op                        = $p_obj->START->next->next;
 
-sub tweak ($\@\@\@$$\%) {
+sub tweak :prototype($\@\@\@$$\%) {
   my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $pad_names, $processed_op) = @_;
   my $tweaked                    = 0;
 

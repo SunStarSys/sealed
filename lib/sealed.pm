@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.8);
+  our $VERSION = qv(8.0.9);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -184,6 +184,7 @@ sub filter {
     my $name   = $2;
     local $_   = $3;
     my $suffix = "";
+    my $t = "";
     my (@types, @stypes, %types, %stypes, @vars, @defaults);
     s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{
       local $@;
@@ -215,18 +216,15 @@ sub filter {
       "$2$3$4"
     }gmse;
     if ($name and $DEBUG eq "verify") {
-      my $t = $prefix;
-      $prefix = "";
-      $prefix .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
-      $prefix .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
-      $prefix .= "],},{ positional => [";
-      $prefix .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
-      $prefix .= "],},];";
-      $prefix .= $t;
+      $t .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
+      $t .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
+      $t .= "],},{ positional => [";
+      $t .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
+      $t .= "],},];";
     }
     $prefix .= " ($_)" if $DEBUG eq "verify";
     # warn "$prefix { $suffix";
-    "$prefix { no warnings qw/experimental shadow/; $suffix";
+    "$prefix { no warnings qw/experimental shadow/; CHECK{ $t } $suffix";
   )gmse if $status > 0;
   return $status;
 }

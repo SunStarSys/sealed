@@ -15,6 +15,7 @@ sub method {$x->foo}
 sub class  {Foo->foo}
 sub anon   {$z->($x)}
 sub bar { 2 }
+sub reentrant;
 
 BEGIN {
   package Foo;

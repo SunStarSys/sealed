@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.0.5);
+  our $VERSION = qv(8.0.6);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -179,7 +179,7 @@ sub filter {
   my $status = filter_read;
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
   no warnings 'uninitialized';
-  s(^(\s*sub\s+(\w[\w:]*)?\s*(?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{)(
+  s(^([^\n]*sub\s+(\w[\w:]*)?\s*(?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{)(
     my $prefix = $1;
     my $name   = $2;
     local $_   = $3;
@@ -187,8 +187,7 @@ sub filter {
     my (@types, @stypes, %types, %stypes, @vars, @defaults);
     s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{
       local $@;
-      if ($1 eq "__PACKAGE__" || $1 eq "__PACKAGE__::SUPER"
-          || (length $1 && eval "require $1")) {
+      if (index($1, "__PACKAGE__") >= 0 || (length $1 && eval "require $1")) {
         $suffix .= "my $1 $2 = ";
         tr!=!!d for my $default = $3;
         if (($default =~ tr!/!!d)==2) {
@@ -225,7 +224,7 @@ sub filter {
       $prefix .= "],},];";
       $prefix .= $t;
     }
-    #warn "$prefix ($_) { $suffix";
+    # warn "$prefix ($_) { $suffix";
     "$prefix ($_) { no warnings qw/experimental shadow/; $suffix";
   )gmse if $status > 0;
   return $status;

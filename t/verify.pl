@@ -1,12 +1,11 @@
 #!/usr/bin/env -S perl -Ilib -Iblib/arch
-use Test::More tests => 4;
+use Test::More tests => 6;
 use v5.38;
 use POSIX 'dup2';
 dup2 fileno(STDERR), fileno(STDOUT);
 use strict;
 use warnings;
 use Benchmark ':all';
-use sealed 'verify';
 
 our ($x, $z);
 $x = bless {}, "Foo";
@@ -32,8 +31,10 @@ BEGIN {our @ISA=qw/Foo/}
 my main $y; #sealed src filter transforms this into: my main $y = 'main';
 
 sub sealed :Sealed {
-    $y->foo();
-  }
+  $y->foo();
+}
+
+use sealed 'verify';
 
 sub also_sealed :Sealed (__PACKAGE__ $a, Int $b, Str $c="HOLA", Int $d//=3, Int $e||=4) {
     if ($a) {
@@ -94,5 +95,13 @@ cmpthese 1_000_000, {
 ok(1);
 
 eval {also_sealed($x,-1)->($x)};
+warn $@;
+ok (length($@) > 0);
+
+eval {also_sealed($x)->($x)};
+warn $@;
+ok (length($@) > 0);
+
+eval {also_sealed($x,"foo")->($x)};
 warn $@;
 ok (length($@) > 0);

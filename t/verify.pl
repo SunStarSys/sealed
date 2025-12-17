@@ -51,7 +51,9 @@ sub also_sealed :Sealed (__PACKAGE__ $a, Int $b, Str $c="HOLA", Int $d//=3, Int 
     $a->bar();
 }
 
-sub reentrant :Sealed { my main $b = shift; local our @Q=1; my $c = $b->_foo; }
+BEGIN {
+  sub reentrant :Sealed (__PACKAGE__ $b) { local our @Q=1; my $c = $b->_foo; }
+}
 
 ok(bless({})->reentrant()==2);
 
@@ -70,7 +72,7 @@ ok(1);
 use constant LOOPS => 3;
 
 sub method2 {
-  my $obj = "main";
+  my $obj = bless {};
   for (1..LOOPS) {
     $obj->foo;
     $obj->bar;
@@ -79,7 +81,7 @@ sub method2 {
 }
 
 sub sealed2 :Sealed {
-  my main $obj; # sealed-src-filter
+  my main $obj = bless {}; # sealed-src-filter
   for (1..LOOPS) {
     $obj->foo;
     $obj->bar;

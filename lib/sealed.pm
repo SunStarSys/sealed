@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.2.2);
+  our $VERSION = qv(8.2.3);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -247,19 +247,19 @@ sub filter {
       "$2$3$4" # drop the class/type info
     }gmse;
 
-    if ($name and $DEBUG eq "verify") {
-      # implement signature type checks for named subs via Types::Common::signature_for
+    if ($DEBUG eq "verify") {
+      # implement signature type checks for named subs via Types::Common::signature
 
-      $t .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
+      $t .= "use Types::Common -types, -sigs; state \$check = signature multiple => [ { named_to_list => 1, named => [";
       $t .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
       $t .= "],},{ positional => [";
       $t .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
-      $t .= "],},];";
+      $t .= "],},]; &\$check;";
+      $prefix .= " ($_,\@_dummy)";
     }
 
-     $prefix .= " ($_,\@_dummy)" if $DEBUG eq "verify"; # keep untyped sigs for perl verification
-    # warn "$prefix { CHECK{ $t } $suffix";
-    "$prefix { no warnings qw/experimental shadow/; CHECK{ $t } $suffix";
+    # warn "$prefix { $t $suffix;
+    "$prefix { no warnings qw/experimental shadow/; $t $suffix";
   )gmsex if $status > 0;
 
   return $status;

@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.4);
+  our $VERSION = qv(8.1.6);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -58,10 +58,10 @@ sub tweak :prototype($\@\@\@$$\%) {
         if (ref($gv_op) eq "B::PADOP") {
           $targ                  = $methop->targ;
 
-          # A little prayer (the PL_curpad we need ain't available now).
+          # A little prayer
           # Not sure if this works better pre-ithread cloning, or post-ithread cloning.
           # I've only used it post-ithread cloning, so YMMV.
-          # $targ collisions are fun; ordering is a WAG with the @op_stack walker down below.
+          # $targ collisions? ordering is a WAG with the @op_stack walker down below.
 
           $method_name           = $$pads[$idx++][$targ] until defined $method_name and not
             (ref $method_name and warn __PACKAGE__ . ": target collision: targ=$targ");
@@ -73,21 +73,25 @@ sub tweak :prototype($\@\@\@$$\%) {
         warn __PACKAGE__, ": compiling $class->$method_name lookup.\n"
           if $DEBUG;
         my $method               = $class->can($method_name)
-          or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you forget to 'use $class' first?\n";
-        # replace $methop
-        my $m = sub {
+          or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you " .
+          "forget to 'use $class' first?\n";
+
+        my $mverify = sub {
           goto &$method if $method == $_[0]->can($method_name);
           require Carp;
           $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
           local $@;
           eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ",
                   B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
-          Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs from $class->$method_name:FAILED lookup");
+          Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs " .
+                         "from $class->$method_name:FAILED lookup");
         };
+
+        # replace $methop
 
         $gv                      = new($gv_op->name, $gv_op->flags,
                                        ref($gv_op) eq "B::PADOP" ? *tweak :
-                                       $DEBUG eq "verify" ? $m : $method,
+                                       $DEBUG eq "verify" ? $mverify : $method,
                                        $cv_obj->PADLIST);
         $gv->next($methop->next);
         $gv->sibparent($methop->sibparent);
@@ -97,18 +101,21 @@ sub tweak :prototype($\@\@\@$$\%) {
         no warnings 'uninitialized';
 
         if (ref($gv) eq "B::PADOP") {
-          # the pad entry associated to $gv->padix is (correctly flagged) garbage,
-          # as well as completely missing a padname!
-          # so we answer the prayer by resetting $$pads[--$idx][$gv->padix], which
+          # we answer the prayer by resetting $$pads[--$idx][$gv->padix], which
           # has the correct semantics (for $method) under assignment.
+
           my $padix = $gv->padix;
           my (undef, @p)         = $cv_obj->PADLIST->ARRAY;
           $pads = [ map defined ? $_->object_2svref : $_, @p ];
-          $$pads[--$idx][$padix] = $DEBUG eq "verify" ? $m : $method;
+          $$pads[--$idx][$padix] = $DEBUG eq "verify" ? $mverify : $method;
+
+          # mark our changes for B::Deparse's source code renderer
           $$pads[$idx][$targ]   .= $DEBUG ne "verify" ? ":compiled" : ":verified";
         }
         else {
-          ${$methop->meth_sv->object_2svref} .= $DEBUG ne "verify" ? ":compiled" : ":verified";
+          # mark our changes for B::Deparse's source code renderer
+          ${$methop->meth_sv->object_2svref} .= $DEBUG ne "verify"
+            ? ":compiled" : ":verified";
         }
 
         ++$tweaked;
@@ -147,7 +154,8 @@ sub MODIFY_CODE_ATTRIBUTES {
 
       if ($op->name eq "pushmark") {
         no warnings 'uninitialized';
-	$tweaked                += eval {tweak $op, @lexical_varnames, @pads, @op_stack, $cv_obj, $pad_names, %processed_op};
+	$tweaked                += eval {tweak $op, @lexical_varnames, @pads,@op_stack,
+                                           $cv_obj, $pad_names, %processed_op};
         warn __PACKAGE__ . ": tweak() aborted: $@" if $@;
       }
 
@@ -167,7 +175,8 @@ sub MODIFY_CODE_ATTRIBUTES {
     }
 
     if (defined $DEBUG and $DEBUG eq "deparse" and $tweaked) {
-      eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ", B::Deparse->new->coderef2text($rv), "\n"};
+      eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ",
+              B::Deparse->new->coderef2text($rv), "\n"};
       warn "B::Deparse: coderef2text() aborted: $@" if $@;
     }
   }
@@ -185,13 +194,16 @@ my %rcache;
 sub filter {
   my ($self) = @_;
   my $status = filter_read;
+
+  # handle bare typed lexical declarations
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
 
+  # handle signatures
   no warnings 'uninitialized';
   s(^
-    ([^\n]*sub\s+(\w[\w:]*)?\s* #sub declaration and name
+    ([^\n]*sub\s+(\w[\w:]*)?\s*                                #sub declaration and name
       (?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?) #unspaced attrs
-      *\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{ #prototype and signature and open bracket
+      *\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{       #prototype and signature and open bracket
    )(
      my $prefix = $1; # everything preceding the signature's arglist
      my $name   = $2; # sub name
@@ -226,10 +238,12 @@ sub filter {
       push @defaults, $default;
       push @vars, substr($2,1);
 
-      "$2$3$4"
+      "$2$3$4" # drop the class/type info
     }gmse;
 
     if ($name and $DEBUG eq "verify") {
+      # implement signature type checks for named subs via Types::Common::signature_for
+
       $t .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
       $t .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
       $t .= "],},{ positional => [";
@@ -237,7 +251,7 @@ sub filter {
       $t .= "],},];";
     }
 
-    $prefix .= " ($_)" if $DEBUG eq "verify";
+     $prefix .= " ($_,\@_dummy)" if $DEBUG eq "verify"; # keep untyped sigs for perl verification
     warn "$prefix { CHECK{ $t } $suffix";
     "$prefix { no warnings qw/experimental shadow/; CHECK{ $t } $suffix";
   )gmsex if $status > 0;

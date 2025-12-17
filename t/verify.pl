@@ -13,14 +13,14 @@ $z = Foo->can("foo");
 sub method {$x->foo}
 sub class  {Foo->foo}
 sub anon   {$z->($x)}
-sub bar { 2 }
+sub bar { 2 } # middle level of class heirarchy
 sub reentrant;
 
 BEGIN {
   package Foo;
   use base 'sealed';
   sub foo { shift }
-  sub bar    { 1 }
+  sub bar    { 1 } # lowest level of class heirarchy
   my $n;
   sub _foo :Sealed { my main $x = shift; $n++ ? $x->bar : $x->reentrant }
 }
@@ -51,9 +51,7 @@ sub also_sealed :Sealed (__PACKAGE__ $a, Int $b, Str $c="HOLA", Int $d//=3, Int 
     $a->bar();
 }
 
-BEGIN {
-  sub reentrant :Sealed (__PACKAGE__ $b) { local our @Q=1; my $c = $b->_foo; }
-}
+sub reentrant :Sealed (__PACKAGE__ $b) { local our @Q=1; my $c = $b->_foo; }
 
 ok(bless({})->reentrant()==2);
 
@@ -96,11 +94,11 @@ cmpthese 1_000_000, {
 
 ok(1);
 
-eval {also_sealed($x,-1)->($x)}; # x is a Foo-typed obj
+eval {also_sealed($x,-1)->($x)}; # x is a Foo-typed lexical, and a Foo-blessed obj
 warn $@;
 ok (length($@) > 0);
 
-$x = bless {}; #  x is Foo-typed but actually a main obj now
+$x = bless {}; #  x is still Foo-typed lexical but its value is a main-blessed obj now
 eval {also_sealed($x)->($x)};
 warn $@;
 ok (length($@) > 0);
@@ -112,7 +110,7 @@ ok (length($@) > 0);
 {
   package Bar;
   BEGIN {our @ISA=qw/main/}
-  sub bar { 3 }
+  sub bar { 3 } # top-level of class hierarchy
   my $z = bless {};
   eval {$z->also_sealed(-1)->($z)};
   warn $@;

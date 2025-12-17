@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.2.4);
+  our $VERSION = qv(8.2.5);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -202,7 +202,7 @@ sub filter {
   # handle bare typed lexical declarations
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
 
-  # handle signatures
+  # NEW in v8.x.y: handle signatures
   no warnings 'uninitialized';
   s(^
     ([^\n]*sub\s+(\w[\w:]*)?\s*                                #sub declaration and name

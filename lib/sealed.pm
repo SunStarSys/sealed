@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.6);
+  our $VERSION = qv(8.1.8);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -79,16 +79,20 @@ sub tweak :prototype($\@\@\@$$\%) {
         my $mverify = sub {
           goto &$method if $method == $_[0]->can($method_name);
           require Carp;
-          $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/;
+          $$pads[$idx][$targ] =~ s/:\w+$/:FAILED/ if ref($gv_op) eq "B::PADOP";
+          ${$methop->meth_sv->object_2svref} =~ s/:\w+$/:FAILED/
+            if ref($gv_op) ne "B::PADOP";
           local $@;
           eval {warn "sub ", $cv_obj->GV->NAME // "__UNKNOWN__", " :sealed ",
                   B::Deparse->new->coderef2text($cv_obj->object_2svref), "\n"};
-          Carp::confess ("sealed failed: $_[0]->$method_name method lookup differs " .
+          Carp::confess ("sealed verify failed: $_[0]->$method_name method lookup differs " .
                          "from $class->$method_name:FAILED lookup");
         };
 
         # replace $methop
-
+        # in the ithread case, we need to pass an arbitrary typegglob that we will "fix"
+        # in the next conditional block. we choose *tweak arbitrarily for this end.
+        # the non-ithreaded case needs no additional massaging, so we pass a CodeRef.
         $gv                      = new($gv_op->name, $gv_op->flags,
                                        ref($gv_op) eq "B::PADOP" ? *tweak :
                                        $DEBUG eq "verify" ? $mverify : $method,
@@ -105,7 +109,7 @@ sub tweak :prototype($\@\@\@$$\%) {
           # has the correct semantics (for $method) under assignment.
 
           my $padix = $gv->padix;
-          my (undef, @p)         = $cv_obj->PADLIST->ARRAY;
+          my (undef, @p)         = $cv_obj->PADLIST->ARRAY; # new() modified PADLIST
           $pads = [ map defined ? $_->object_2svref : $_, @p ];
           $$pads[--$idx][$padix] = $DEBUG eq "verify" ? $mverify : $method;
 
@@ -252,7 +256,7 @@ sub filter {
     }
 
      $prefix .= " ($_,\@_dummy)" if $DEBUG eq "verify"; # keep untyped sigs for perl verification
-    warn "$prefix { CHECK{ $t } $suffix";
+    # warn "$prefix { CHECK{ $t } $suffix";
     "$prefix { no warnings qw/experimental shadow/; CHECK{ $t } $suffix";
   )gmsex if $status > 0;
 

@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.3);
+  our $VERSION = qv(8.1.4);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -186,43 +186,49 @@ sub filter {
   my ($self) = @_;
   my $status = filter_read;
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
+
   no warnings 'uninitialized';
-  s(^([^\n]*sub\s+(\w[\w:]*)?\s*(?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?)*\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{)(
-    my $prefix = $1;
-    my $name   = $2;
-    local $_   = $3;
-    my $suffix = "";
-    my $t = "";
-    my (@types, @stypes, %types, %stypes, @vars, @defaults);
-    s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{
-      local $@;
-      if (index($1, "__PACKAGE__") >= 0 || (length $1 && ($rcache{$1} //= eval "require $1" || 0))) {
-        $suffix .= "my $1 $2 = ";
-        tr!=!!d for my $default = $3;
-        if (($default =~ tr!/!!d)==2) {
-          $suffix .= "shift // $default;";
-        }
-        elsif (($default =~ tr!|!!d)==2) {
-          $suffix .= "shift || $default;";
-        }
-        elsif ($default) {
-          $suffix .= "\@_ ? shift : $default;";
-        }
-        else {
-          $suffix .= "shift;"
-        }
-        push @types, "Object";
-        push @defaults, $default;
-      }
-      elsif (length $1) {
-        push @types, $1;
-        push @stypes, $1 unless $stypes{$1}++;
-        tr!=/|!!d for my $default = $3;
-        push @defaults, $default;
-      }
+  s(^
+    ([^\n]*sub\s+(\w[\w:]*)?\s* #sub declaration and name
+      (?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?) #unspaced attrs
+      *\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{ #prototype and signature and open bracket
+   )(
+     my $prefix = $1; # everything preceding the signature's arglist
+     my $name   = $2; # sub name
+     local $_   = $3; # signature's arglist
+     my $suffix = "";
+     my $t = "";
+     my (@types, @vars, @defaults);
+
+     s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
+       local $@;
+
+       my $is_ext_class = ($rcache{$1} //= eval "require $1" || 0);
+       my $class = ($is_ext_class || $1 eq "__PACKAGE__") ? $1 : "";
+
+       $suffix .= "my $class $2 = ";
+
+       tr!=!!d for my $default = $3;
+       if (($default =~ tr!/!!d)==2) {
+         $suffix .= "shift // $default;";
+       }
+       elsif (($default =~ tr!|!!d)==2) {
+         $suffix .= "shift || $default;";
+       }
+       elsif ($default) {
+         $suffix .= "\@_ ? shift : $default;";
+       }
+       else {
+         $suffix .= "shift;"
+       }
+
+      push @types, ($is_ext_class || $1 eq "__PACKAGE__") ? "Object" : $1;
+      push @defaults, $default;
       push @vars, substr($2,1);
+
       "$2$3$4"
     }gmse;
+
     if ($name and $DEBUG eq "verify") {
       $t .= "use Types::Common -types, -sigs; signature_for $name => multiple => [ { named_to_list => 1, named => [";
       $t .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
@@ -230,10 +236,12 @@ sub filter {
       $t .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
       $t .= "],},];";
     }
+
     $prefix .= " ($_)" if $DEBUG eq "verify";
-    # warn "$prefix { $suffix";
+    warn "$prefix { CHECK{ $t } $suffix";
     "$prefix { no warnings qw/experimental shadow/; CHECK{ $t } $suffix";
-  )gmse if $status > 0;
+  )gmsex if $status > 0;
+
   return $status;
 }
 1;

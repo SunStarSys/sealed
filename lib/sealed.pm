@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.2.3);
+  our $VERSION = qv(8.2.4);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -213,7 +213,7 @@ sub filter {
      my $name   = $2; # sub name
      local $_   = $3; # signature's arglist
      my $suffix = "";
-     my $t = "";
+     my $verify = "";
      my (@types, @vars, @defaults);
 
      s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
@@ -250,16 +250,17 @@ sub filter {
     if ($DEBUG eq "verify") {
       # implement signature type checks for named subs via Types::Common::signature
 
-      $t .= "use Types::Common -types, -sigs; state \$check = signature multiple => [ { named_to_list => 1, named => [";
-      $t .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
-      $t .= "],},{ positional => [";
-      $t .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
-      $t .= "],},]; &\$check;";
+      $verify .= "use Types::Common -types, -sigs; state \$check = signature multiple => [ { named_to_list => 1, named => [";
+      $verify .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
+      $verify .= "],},{ positional => [";
+      $verify .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
+      $verify .= "],},]; &\$check;";
+
       $prefix .= " ($_,\@_dummy)";
     }
 
-    # warn "$prefix { $t $suffix;
-    "$prefix { no warnings qw/experimental shadow/; $t $suffix";
+    # warn "$prefix { $verify $suffix;
+    "$prefix { no warnings qw/experimental shadow/; $verify $suffix";
   )gmsex if $status > 0;
 
   return $status;

@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.2);
+  our $VERSION = qv(8.1.3);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -180,6 +180,8 @@ sub import {
   filter_add(bless []);
 }
 
+my %rcache;
+
 sub filter {
   my ($self) = @_;
   my $status = filter_read;
@@ -194,7 +196,7 @@ sub filter {
     my (@types, @stypes, %types, %stypes, @vars, @defaults);
     s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{
       local $@;
-      if (index($1, "__PACKAGE__") >= 0 || (length $1 && eval "require $1")) {
+      if (index($1, "__PACKAGE__") >= 0 || (length $1 && ($rcache{$1} //= eval "require $1" || 0))) {
         $suffix .= "my $1 $2 = ";
         tr!=!!d for my $default = $3;
         if (($default =~ tr!/!!d)==2) {

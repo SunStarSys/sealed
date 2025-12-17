@@ -1,5 +1,5 @@
 #!/usr/bin/env -S perl -Ilib -Iblib/arch
-use Test::More tests => 6;
+use Test::More tests => 7;
 use v5.38;
 use POSIX 'dup2';
 dup2 fileno(STDERR), fileno(STDOUT);
@@ -105,3 +105,13 @@ ok (length($@) > 0);
 eval {also_sealed($x,"foo")->($x)};
 warn $@;
 ok (length($@) > 0);
+
+{
+  package Bar;
+  BEGIN {our @ISA=qw/main/}
+  sub bar { 3 }
+  my $z = bless {};
+  eval {$z->also_sealed(-1)->($z)};
+  warn $@;
+  main::ok (length($@) > 0);
+}

@@ -20,15 +20,15 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.1.8);
+  our $VERSION = qv(8.2.0);
   XSLoader::load("sealed", $VERSION);
 }
 
 my %valid_attrs                  = (sealed => 1);
-my $p_obj                        = B::svref_2object(sub {&tweak});
+my $p_obj                        = B::svref_2object(sub {&tweak}); # template sub
 
 # B::PADOP (w/ ithreads) or B::SVOP
-my $gv_op                        = $p_obj->START->next->next;
+my $gv_op                        = $p_obj->START->next->next; # its op of interest
 
 sub tweak :prototype($\@\@\@$$\%) {
   my ($op, $lexical_varnames, $pads, $op_stack, $cv_obj, $pad_names, $processed_op) = @_;
@@ -238,9 +238,11 @@ sub filter {
          $suffix .= "shift;"
        }
 
-      push @types, ($is_ext_class || $1 eq "__PACKAGE__") ? "Object" : $1;
-      push @defaults, $default;
-      push @vars, substr($2,1);
+       my $type = $is_ext_class ? "InstanceOf['$1']" : $1;
+       $type = "InstanceOf[__PACKAGE__]" if $1 eq "__PACKAGE__";
+       push @types, $type;
+       push @defaults, $default;
+       push @vars, substr($2,1);
 
       "$2$3$4" # drop the class/type info
     }gmse;
@@ -262,6 +264,7 @@ sub filter {
 
   return $status;
 }
+
 1;
 
 __END__

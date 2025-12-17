@@ -94,10 +94,11 @@ cmpthese 1_000_000, {
 
 ok(1);
 
-eval {also_sealed($x,-1)->($x)};
+eval {also_sealed($x,-1)->($x)}; # x is a Foo-typed obj
 warn $@;
 ok (length($@) > 0);
 
+$x = bless {}; #  x is Foo-typed but actually a main obj now
 eval {also_sealed($x)->($x)};
 warn $@;
 ok (length($@) > 0);

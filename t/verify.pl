@@ -28,7 +28,9 @@ sub func   {Foo::foo($x)}
 
 BEGIN {our @ISA=qw/Foo/}
 
-my main $y; #sealed src filter transforms this into: my main $y = 'main';
+
+use constant label => __PACKAGE__;
+my label $y; #sealed src filter transforms this into: my label $y = 'label';
 
 sub sealed :Sealed {
   $y->foo();
@@ -36,11 +38,11 @@ sub sealed :Sealed {
 
 use sealed 'verify';
 
-sub also_sealed :Sealed (__PACKAGE__ $a, Int $b, Str $c="HOLA", Int $d//=3, Int $e||=4) {
+sub also_sealed :Sealed (label $a, Int $b, Str $c="HOLA", Int $d//=3, Int $e||=4) {
     if ($a) {
         my Benchmark $bench;
         my $inner = $a;
-        return sub :Sealed (__PACKAGE__ $z) {
+        return sub :Sealed (label $z) {
             my Foo $b = $a;
             $inner->foo($b->bar($inner->bar, $inner, $bench->new));
             $a = $inner;

@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.2.5);
+  our $VERSION = qv(8.2.6);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -205,9 +205,9 @@ sub filter {
   # NEW in v8.x.y: handle signatures
   no warnings 'uninitialized';
   s(^
-    ([^\n]*sub\s+(\w[\w:]*)?\s*                                #sub declaration and name
-      (?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?) #unspaced attrs
-      *\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{       #prototype and signature and open bracket
+    ([^\n]*sub\s+(\w[\w:]*)?\s*                               #sub declaration and name
+      (?::\s*\w+(?:\(.*?\))?)*\s*:\s*[Ss]ealed\s*(?::\s*\w+(?:\(.*?\))?)#unspaced attrs
+      *\s*(?:\(\S+\))?\s*)\((.*?)\)\s+\{         #prototype, signature and open bracket
    )(
      my $prefix = $1; # everything preceding the signature's arglist
      my $name   = $2; # sub name
@@ -219,7 +219,7 @@ sub filter {
      s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
        local $@;
 
-       my $is_ext_class = ($rcache{$1} //= eval "require $1" || 0);
+       my $is_ext_class = $rcache{$1} //= eval "require $1";
        my $class = ($is_ext_class || $1 eq "__PACKAGE__") ? $1 : "";
 
        $suffix .= "my $class $2 = ";
@@ -238,19 +238,18 @@ sub filter {
          $suffix .= "shift;"
        }
 
-       my $type = $is_ext_class ? "InstanceOf['$1']" : $1;
-       $type = "InstanceOf[__PACKAGE__]" if $1 eq "__PACKAGE__";
+       my $type = $is_ext_class ? "InstanceOf[$1]" : $1;
        push @types, $type;
        push @defaults, $default;
        push @vars, substr($2,1);
 
-      "$2$3$4" # drop the class/type info
+       "$2$3$4" # drop the class/type info
     }gmse;
 
     if ($DEBUG eq "verify") {
       # implement signature type checks for named subs via Types::Common::signature
 
-      $verify .= "use Types::Common -types, -sigs; state \$check = signature multiple => [ { named_to_list => 1, named => [";
+      $verify .= "use Types::Common -types, -sigs; no strict 'vars'; state \$check = signature multiple => [ { named_to_list => 1, named => [";
       $verify .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
       $verify .= "],},{ positional => [";
       $verify .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
@@ -259,8 +258,8 @@ sub filter {
       $prefix .= " ($_,\@_dummy)";
     }
 
-    # warn "$prefix { $verify $suffix;
-    "$prefix { no warnings qw/experimental shadow/; $verify $suffix";
+    # warn "$prefix { {$verify} $suffix;
+    "$prefix { no warnings qw/experimental shadow/; {$verify} $suffix";
   )gmsex if $status > 0;
 
   return $status;

@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.3.1);
+  our $VERSION = qv(8.3.4);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -76,6 +76,8 @@ sub tweak :prototype($\@\@\@$$\%) {
         my $method               = $class->can($method_name)
           or die __PACKAGE__ . ": invalid lookup: $class->$method_name - did you " .
           "forget to 'use $class' first?\n";
+
+        no warnings 'uninitialized';
 
         my $mverify = sub {
           goto &$method if $method == $_[0]->can($method_name);
@@ -192,15 +194,15 @@ sub import {
   $DEBUG                         = $_[1];
   local our $VERIFY_PREFIX = $_[2] if $DEBUG eq "verify" and defined $_[2];
   local $_;
+  local our %rcache;
   filter_add(bless []);
 }
-
-my %rcache;
 
 sub filter {
   my ($self) = @_;
   my $status = filter_read;
   our $VERIFY_PREFIX;
+  our %rcache;
   # handle bare typed lexical declarations
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
 

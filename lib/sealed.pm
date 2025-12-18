@@ -18,9 +18,10 @@ use Filter::Util::Call;
 
 our $VERSION;
 our $DEBUG;
+our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.2.6);
+  our $VERSION = qv(8.3.0);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -189,6 +190,7 @@ sub MODIFY_CODE_ATTRIBUTES {
 
 sub import {
   $DEBUG                         = $_[1];
+  local our $VERIFY_PREFIX = $_[2] if $DEBUG eq "verify" and defined $_[2];
   local $_;
   filter_add(bless []);
 }
@@ -198,7 +200,7 @@ my %rcache;
 sub filter {
   my ($self) = @_;
   my $status = filter_read;
-
+  our $VERIFY_PREFIX;
   # handle bare typed lexical declarations
   s/^\s*my\s+([\w:]+)\s+(\$\w+);/my $1 $2 = '$1';/gms if $status > 0;
 
@@ -249,7 +251,7 @@ sub filter {
     if ($DEBUG eq "verify") {
       # implement signature type checks for named subs via Types::Common::signature
 
-      $verify .= "use Types::Common -types, -sigs; no strict 'vars'; state \$check = signature multiple => [ { named_to_list => 1, named => [";
+      $verify .= "$VERIFY_PREFIX; no strict 'vars'; state \$check = signature multiple => [ { named_to_list => 1, named => [";
       $verify .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
       $verify .= "],},{ positional => [";
       $verify .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;
@@ -288,9 +290,12 @@ sealed - Subroutine attribute for compile-time method lookups on its typed lexic
     use sealed 'debug';   # warns about 'method_named' op tweaks
     use sealed 'deparse'; # additionally warns with the B::Deparse output
     use sealed 'dump';    # warns with the $op->dump during the tree walk
-    use sealed 'verify';  # verifies all CV tweaks
+    use sealed 'verify';  # verifies all CV tweaks, optional VERIFY_PREFIX arg
     use sealed 'disabled';# disables all CV tweaks
     use sealed;           # disables all warnings
+
+    VERIFY_PREFIX arg defaults to "use Types::Common -types, -sigs;", which
+    must export an equivalent API to Types::Common::signature() as "signature()".
 
 =head1 BUGS
 

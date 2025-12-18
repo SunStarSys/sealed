@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.3.0);
+  our $VERSION = qv(8.3.1);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -218,7 +218,7 @@ sub filter {
      my $verify = "";
      my (@types, @vars, @defaults);
 
-     s{([\w:]+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
+     s{(\S+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
        local $@;
 
        my $is_ext_class = $rcache{$1} //= eval "require $1";

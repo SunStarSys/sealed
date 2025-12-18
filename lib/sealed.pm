@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.3.8);
+  our $VERSION = qv(8.4.0);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -205,7 +205,7 @@ sub filter {
   our $VERIFY_PREFIX;
   our ($pkg, %rcache);
   # handle bare typed lexical declarations
-  s/^\s*my\s+([\w:]+)\s+(\$\w+)(.)/$3 eq ";" ? qq(BEGIN{local \$@; eval "require $1"} my $1 $2 = '$1';) : qq(BEGIN {local \$@; eval "require $1"}my $1 $2$3)/gmse if $status > 0;
+  s/^\s*my\s+(\w[\w:]*)\s+(\$\w+)(.)/$3 eq ";" ? qq(BEGIN{local \$@; eval "require $1"} my $1 $2; {no strict qw!vars subs!; $2 = $1}) : qq(BEGIN {local \$@; eval "require $1"}my $1 $2$3)/gmse if $status > 0;
 
   # NEW in v8.x.y: handle signatures
   no warnings 'uninitialized';

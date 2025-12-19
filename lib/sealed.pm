@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.4.0);
+  our $VERSION = qv(8.4.1);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -223,7 +223,7 @@ sub filter {
 
      s{(\S+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
        local $@;
-       no strict 'refs';
+       no strict qw/refs/;
        my $is_ext_class = $rcache{$1} //= eval "package $pkg; require $1" // eval {*{eval "package $pkg; $1"}};
        my $class = ($is_ext_class || $1 eq "__PACKAGE__") ? $1 : "";
 
@@ -254,7 +254,7 @@ sub filter {
     if ($DEBUG eq "verify") {
       # implement signature type checks for named subs via Types::Common::signature
 
-      $verify .= "$VERIFY_PREFIX; no strict 'vars'; state \$check = signature multiple => [ { named_to_list => 1, named => [";
+      $verify .= "$VERIFY_PREFIX; no strict qw/vars subs/; state \$check = signature multiple => [ { named_to_list => 1, named => [";
       $verify .= "$vars[$_] => $types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] }," : "") for 0..$#vars;
       $verify .= "],},{ positional => [";
       $verify .= "$types[$_], " . (length($defaults[$_]) ? "{ default => $defaults[$_] },":"") for 0..$#types;

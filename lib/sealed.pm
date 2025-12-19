@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.4.2);
+  our $VERSION = qv(8.4.3);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -201,6 +201,7 @@ sub filter {
   my $status = filter_read;
   our $VERIFY_PREFIX;
   our %rcache;
+  my $pkg = caller;
 
   # handle bare typed lexical declarations
   s/^\s*my\s+(\w[\w:]*)\s+(\$\w+)(.)/$3 eq ";" ? qq(BEGIN{local \$@; eval "require $1"} \
@@ -224,9 +225,11 @@ sub filter {
      s{(\S+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
        local $@;
        no strict 'refs';
-       my $pkg = caller;
+
        my $is_ext_class = $rcache{"$pkg\::$1"} //= eval "package $pkg; require $1"
-         // eval {*{eval "no strict 'vars'; package $pkg; $1"}};
+         // eval {*{eval "no strict 'vars'; package $pkg; $1"}}
+         // eval "use types; use class; my $1 $2 = '$1'";
+
        my $class = $is_ext_class ? $1 : "";
 
        $suffix .= "my $class $2 = ";

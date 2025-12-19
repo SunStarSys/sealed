@@ -21,7 +21,7 @@ our $DEBUG;
 our $VERIFY_PREFIX = "use Types::Common -types, -sigs;";
 
 BEGIN {
-  our $VERSION = qv(8.4.1);
+  our $VERSION = qv(8.4.2);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -192,10 +192,7 @@ sub MODIFY_CODE_ATTRIBUTES {
 
 sub import {
   $DEBUG                         = $_[1];
-  local our $VERIFY_PREFIX = $_[2] if $DEBUG eq "verify" and defined $_[2];
-  local $_;
-  local our %rcache;
-  local our $pkg = caller();
+  our $VERIFY_PREFIX = $_[2] if $DEBUG eq "verify" and defined $_[2];
   filter_add(bless []);
 }
 
@@ -203,9 +200,12 @@ sub filter {
   my ($self) = @_;
   my $status = filter_read;
   our $VERIFY_PREFIX;
-  our ($pkg, %rcache);
+  our %rcache;
+
   # handle bare typed lexical declarations
-  s/^\s*my\s+(\w[\w:]*)\s+(\$\w+)(.)/$3 eq ";" ? qq(BEGIN{local \$@; eval "require $1"} my $1 $2; {no strict qw!vars subs!; $2 = $1}) : qq(BEGIN {local \$@; eval "require $1"}my $1 $2$3)/gmse if $status > 0;
+  s/^\s*my\s+(\w[\w:]*)\s+(\$\w+)(.)/$3 eq ";" ? qq(BEGIN{local \$@; eval "require $1"} \
+    my $1 $2; {no strict qw!vars subs!; no warnings 'once'; $2 = $1})
+    : qq(BEGIN {local \$@; eval "require $1"}my $1 $2$3)/gmse if $status > 0;
 
   # NEW in v8.x.y: handle signatures
   no warnings 'uninitialized';
@@ -223,9 +223,11 @@ sub filter {
 
      s{(\S+)?\s*(\$\w+)(\s*\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
        local $@;
-       no strict qw/refs/;
-       my $is_ext_class = $rcache{$1} //= eval "package $pkg; require $1" // eval {*{eval "package $pkg; $1"}};
-       my $class = ($is_ext_class || $1 eq "__PACKAGE__") ? $1 : "";
+       no strict 'refs';
+       my $pkg = caller;
+       my $is_ext_class = $rcache{"$pkg\::$1"} //= eval "package $pkg; require $1"
+         // eval {*{eval "no strict 'vars'; package $pkg; $1"}};
+       my $class = $is_ext_class ? $1 : "";
 
        $suffix .= "my $class $2 = ";
 

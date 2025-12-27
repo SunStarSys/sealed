@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.6.1);
+  our $VERSION = qv(8.6.2);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -215,7 +215,7 @@ sub source_munger {
      my $suffix = "";
      my $entry;
      my $idx = 0;
-     s{(\S*)\s*(\$\w+)\s*?(\S*=\s*[^,]+)?(\s*,\s*)?}{ # comma-separated sig args
+     s{([\w:]*)\s*(\$\w+)\s*?([/|]{0,2}=\s*[^,]+)?(\s*,\s*|\s*$)}{ # comma-separated sig args
        $entry++ if length $1;
 
        $suffix .= "my $1 $2 = ";

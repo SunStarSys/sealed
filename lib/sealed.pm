@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.6.5);
+  our $VERSION = qv(8.7.0);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -141,11 +141,12 @@ sub tweak :prototype($\@\@\@$$\%) {
 sub all {
   my $pkg = caller;
   no strict 'refs';
-  while (my (undef, $v) = each %{$pkg}) {
-    MODIFY_CODE_ATTRIBUTES($pkg, *$v{CODE}, "sealed") if *$v{CODE};
+  eval "BEGIN {
+  while (my (undef, \$v) = each %{$pkg\::}) {
+    MODIFY_CODE_ATTRIBUTES(\$pkg, *\$v{CODE}, \"sealed\") if ref(*\$v{CODE});
   }
+  }";
 }
-
 
 sub MODIFY_CODE_ATTRIBUTES {
   my ($class, $rv, @attrs)       = @_;

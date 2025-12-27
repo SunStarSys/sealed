@@ -2,7 +2,7 @@ package ModPerl::RegistryCookerSealed;
 use strict;
 use warnings;
 use version;
-our $VERSION = qv(1.3.0);
+our $VERSION = qv(1.3.1);
 
 use Apache2::Const -compile => qw(:common &OPT_EXECCGI);
 use ModPerl::RegistryCooker;
@@ -49,8 +49,6 @@ sub convert_script_to_compiled_handler {
     'package ',
     $self->{PACKAGE}, ";",
     "use base 'sealed';",
-    "use types;",
-    "use class;",
     "sub handler :Sealed {",
     "local \$0 = '$script_name';",
     $nph,

@@ -18,7 +18,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(1.0.0);
+  our $VERSION = qv(1.0.1);
 }
 
 my %valid_attrs                  = (clown => 1);
@@ -30,7 +30,7 @@ sub tweak :prototype($\@\@\@$$\%) {
 
   if (ref($op) eq "B::PADOP") {
 
-    my $padix                     = $op->padix // return $op->next, 0;
+    my $padix           =  $op->padix // return $op->next, 0;
     # A little prayer
     # Not sure if this works better pre-ithread cloning, or post-ithread cloning.
     # I've only used it post-ithread cloning, so YMMV.
@@ -39,7 +39,7 @@ sub tweak :prototype($\@\@\@$$\%) {
     $sub_name           = $$pads[$idx++][$padix] until defined $sub_name;
   }
   else {
-    $sub_name = ${$op->meth_sv->object_2svref};
+    $sub_name           = ${$op->meth_sv->object_2svref};
   }
 
   no strict 'refs';
@@ -52,6 +52,7 @@ sub tweak :prototype($\@\@\@$$\%) {
 sub all {
   my $pkg = caller;
   no strict 'refs';
+  # can segfault
   eval "BEGIN {
     while (my (undef, \$v) = each %{$pkg\::}) {
       MODIFY_CODE_ATTRIBUTES(\$pkg, *\$v{CODE}, \"clown\") if ref(*\$v{CODE});
@@ -144,62 +145,12 @@ clown - Subroutine attribute for compile-time subroutine sanity checks.
 
 =head2 C<import()> Options
 
-    use sealed 'debug';   # warns about 'method_named' op tweaks
-    use sealed 'deparse'; # additionally warns with the B::Deparse output
-    use sealed 'dump';    # warns with the $op->dump during the tree walk
-    use sealed 'verify';  # verifies all CV tweaks
-    use sealed 'disabled';# disables all CV tweaks
-    use sealed 'types';   # enables builtin Perl::Types type system optimizations
-    use sealed 'all';     # enables :Sealed on all subs
-    use sealed;           # disables all warnings
-
-=head1 BUGS
-
-You may need to simplify your named method call argument stack,
-because this op-tree walker isn't as robust as it needs to be.
-For example, any "branching" done in the target method's argument
-stack, eg by using the '?:' ternary operator, will break this logic
-(pushmark ops are processed linearly, by $op->next walking, in tweak()).
-
-=head2 Compiling perl v5.30+ for functional mod_perl2 w/ithreads and httpd 2.4.x w/event mpm
-
-    % ./Configure -Uusemymalloc -Duseshrplib -Dusedtrace -Duseithreads -des
-    % make -j$(nproc) && sudo make -j$(nproc) install
-
-In an ithread setting, running mod_perl2 involves a tuning commitment to
-each ithread, to avoid garbage collecting the ithread until the process is at its
-global exit point. For mod_perl, ensure you never reap new ithreads from the mod_perl
-portion of the tune, only from the mpm_event worker process tune or during httpd
-server (graceful) restart.
-
-=head1 CAVEATS
-
-KISS.
-
-Don't use typed lexicals under a :sealed sub for API method argument
-processing, if you are writing a reusable OO module (on CPAN, say). This
-module primarily targets end-applications: virtual method lookups and duck
-typing are core elements of any dynamic language's OO feature design, and Perl
-is no different.
-
-Classes derived from 'sealed' should be treated as if they do not support duck
-typing or virtual method lookups.  Best practice is to avoid overriding any methods
-in those classes, but otherwise understand that 'old code' cannot make use of 'new
-code' in sealed classes.
-
-Look into XS if you want peak performance in reusable OO methods you wish
-to provide. The best targets for :sealed subs with typed lexicals are calls
-to named methods implemented in XS, where the overhead of traditional OO
-virtual-method lookup is on the same order as the actual duration of the
-invoked method call.
-
-For nontrivial methods implemented entirely in Perl itself, the op-tree processing
-overhead involved during execution of those methods will drown out any performance
-gains this module would otherwise provide.
-
-=head1 SEE ALSO
-
-L<https://www.iconoclasts.blog/joe/perl7-sealed-lexicals>
+    use clown 'debug';   # warns about 'method_named' op tweaks
+    use clown 'deparse'; # additionally warns with the B::Deparse output
+    use clown 'dump';    # warns with the $op->dump during the tree walk
+    use clown 'disabled';# disables all CV tweaks
+    use clown 'all';     # enables :Sealed on all subs
+    use clown;           # disables all warnings
 
 =head1 LICENSE
 

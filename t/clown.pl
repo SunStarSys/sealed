@@ -7,4 +7,5 @@ use clown 'dump';
 use base 'clown';
 use Test::More tests => 1;
 sub quux :Clown { quux() }
-ok(1);
+eval "BEGIN { sub foo :Clown { bar() }}";
+ok(1) if $@;

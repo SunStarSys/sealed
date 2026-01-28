@@ -9,3 +9,4 @@ use Test::More tests => 1;
 sub quux :Clown { quux() }
 eval "BEGIN { sub foo :Clown { bar() }}";
 ok(1) if $@;
+print $@;

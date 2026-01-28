@@ -18,7 +18,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(1.0.1);
+  our $VERSION = qv(1.0.3);
 }
 
 my %valid_attrs                  = (clown => 1);
@@ -36,10 +36,10 @@ sub tweak :prototype($\@\@\@$$\%) {
     # I've only used it post-ithread cloning, so YMMV.
     # $targ collisions? ordering is a WAG with the @op_stack walker down below.
 
-    $sub_name           = $$pads[$idx++][$padix] until defined $sub_name;
+    $sub_name           = substr($$pads[$idx++][$padix], 1) until defined $sub_name;
   }
   else {
-    $sub_name           = ${$op->meth_sv->object_2svref};
+    $sub_name           = substr(${$op->meth_sv->object_2svref}, 1);
   }
 
   no strict 'refs';
@@ -151,6 +151,12 @@ clown - Subroutine attribute for compile-time subroutine sanity checks.
     use clown 'disabled';# disables all CV tweaks
     use clown 'all';     # enables :Sealed on all subs
     use clown;           # disables all warnings
+
+=head2 BUGS
+
+You cannot use any other form of global variables within a :clown sub, since
+this module assumes every global within is a subroutine name.
+
 
 =head1 LICENSE
 

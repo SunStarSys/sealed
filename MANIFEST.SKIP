@@ -1,5 +1,6 @@
 \.git
 ^enquiry\.pl$
+_Inline/
 lib/Dotiac
 \.tar\.gz
 ^Makefile(?:\.old)?$

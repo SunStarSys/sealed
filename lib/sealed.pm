@@ -20,7 +20,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(8.7.6);
+  our $VERSION = qv(8.7.7);
   XSLoader::load("sealed", $VERSION);
 }
 
@@ -143,7 +143,8 @@ sub all {
   no strict 'refs';
   eval "BEGIN {
     while (my (undef, \$v) = each %{$pkg\::}) {
-      MODIFY_CODE_ATTRIBUTES(\$pkg, *\$v{CODE}, \"sealed\") if ref(*\$v{CODE});
+      eval 'ref(\$v) eq q(CODE)' or next;
+      MODIFY_CODE_ATTRIBUTES(\$pkg, \$v, \"sealed\");
     }
   }";
 }

@@ -5,10 +5,7 @@
 # Author: Joe Schaefer <joe@sunstarsys.com>
 
 package clown;
-use v5.28;
-
-use strict;
-use warnings;
+use v5.38;
 use version;
 
 use B::Generate ();
@@ -18,7 +15,7 @@ our $VERSION;
 our $DEBUG;
 
 BEGIN {
-  our $VERSION = qv(1.0.3);
+  our $VERSION = qv(1.0.4);
 }
 
 my %valid_attrs                  = (clown => 1);
@@ -30,16 +27,16 @@ sub tweak :prototype($\@\@\@$$\%) {
 
   if (ref($op) eq "B::PADOP") {
 
-    my $padix           =  $op->padix // return $op->next, 0;
+    my $padix           =  $op->padix;
     # A little prayer
     # Not sure if this works better pre-ithread cloning, or post-ithread cloning.
     # I've only used it post-ithread cloning, so YMMV.
     # $targ collisions? ordering is a WAG with the @op_stack walker down below.
 
-    $sub_name           = substr($$pads[$idx++][$padix], 1) until defined $sub_name;
+    $sub_name           = substr $$pads[$idx++][$padix], 1 until defined $sub_name;
   }
   else {
-    $sub_name           = substr(${$op->meth_sv->object_2svref}, 1);
+    $sub_name           = substr ${$op->sv->object_2svref}, 1;
   }
 
   no strict 'refs';
@@ -55,7 +52,8 @@ sub all {
   # can segfault
   eval "BEGIN {
     while (my (undef, \$v) = each %{$pkg\::}) {
-      MODIFY_CODE_ATTRIBUTES(\$pkg, *\$v{CODE}, \"clown\") if ref(*\$v{CODE});
+      eval 'ref(\$v) eq q(CODE)' or next;
+      MODIFY_CODE_ATTRIBUTES(\$pkg, \$v, \"clown\");
     }
   }";
 }

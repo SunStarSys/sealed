@@ -316,11 +316,10 @@ stack, eg by using the '?:' ternary operator, will break this logic
     % ./Configure -Uusemymalloc -Duseshrplib -Dusedtrace -Duseithreads -des
     % make -j$(nproc) && sudo make -j$(nproc) install
 
-In an ithread setting, running mod_perl2 involves a tuning commitment to
-each ithread, to avoid garbage collecting the ithread until the process is at its
-global exit point. For mod_perl, ensure you never reap new ithreads from the mod_perl
-portion of the tune, only from the mpm_event worker process tune or during httpd
-server (graceful) restart.
+In general, source filters (like the one employed by sealed.pm) aren't ithread-safe,
+so be sure to either preload your sealed-dependent modules at server startup, or use
+the ModPerl::RegistryCookerSealed logic to load them without relying on `sealed::import()`.
+
 
 =head1 CAVEATS
 
